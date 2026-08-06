@@ -50,7 +50,7 @@
     <script>
         document.addEventListener('alpine:init', () => {
             setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('notify', { detail: { message: `{!! addslashes(session('success')) !!}`, type: 'success' } }));
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: @json(session('success')), type: 'success' } }));
             }, 100);
         });
     </script>
@@ -60,7 +60,7 @@
     <script>
         document.addEventListener('alpine:init', () => {
             setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('notify', { detail: { message: `{!! addslashes(session('error')) !!}`, type: 'error' } }));
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: @json(session('error')), type: 'error' } }));
             }, 100);
         });
     </script>
@@ -70,7 +70,7 @@
     <script>
         document.addEventListener('alpine:init', () => {
             setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('notify', { detail: { message: `{!! addslashes(session('status')) !!}`, type: 'success' } }));
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: @json(session('status')), type: 'success' } }));
             }, 100);
         });
     </script>

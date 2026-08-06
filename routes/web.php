@@ -38,7 +38,7 @@ Route::middleware(['auth', 'verified', 'force_password'])->group(function () {
     Route::post('/radicados/{radicado}/solicitud', [SolicitudEdicionController::class, 'store'])->name('solicitudes.store');
     Route::patch('/solicitudes/{solicitud}', [SolicitudEdicionController::class, 'update'])->name('solicitudes.update')->middleware('can:solicitudes.gestionar');
 
-    Route::resource('festivos', FestivoController::class)->except(['show'])->middleware('role:jefe');
+    Route::resource('festivos', FestivoController::class)->except(['show'])->middleware('role:admin');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 
 class RadicadoController extends Controller
 {
@@ -170,7 +171,7 @@ class RadicadoController extends Controller
         ]);
 
         Auditoria::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'accion' => 'Creó un radicado',
             'modelo' => 'Radicado',
             'modelo_id' => $radicado->id,
@@ -224,7 +225,7 @@ class RadicadoController extends Controller
         ]);
 
         Auditoria::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'accion' => 'Editó un radicado',
             'modelo' => 'Radicado',
             'modelo_id' => $radicado->id,
@@ -250,13 +251,15 @@ class RadicadoController extends Controller
 
     public function updateCierre(Request $request, Radicado $radicado)
     {
+        Gate::authorize('radicados.completar');
+
         $radicado->update([
             'fecha_salida' => Carbon::now()->toDateString(),
             'estado' => 'completado',
         ]);
 
         Auditoria::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'accion' => 'Completó un radicado',
             'modelo' => 'Radicado',
             'modelo_id' => $radicado->id,
@@ -268,7 +271,7 @@ class RadicadoController extends Controller
 
     public function anular(Request $request, Radicado $radicado)
     {
-        Gate::authorize('admin');
+        Gate::authorize('radicados.anular');
 
         $request->validate([
             'motivo_anulacion' => 'required|string|max:255',
@@ -277,11 +280,11 @@ class RadicadoController extends Controller
         $radicado->update([
             'estado' => 'anulado',
             'motivo_anulacion' => $request->motivo_anulacion,
-            'anulado_por' => auth()->id(),
+            'anulado_por' => Auth::id(),
         ]);
 
         Auditoria::create([
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'accion' => 'Anuló un radicado',
             'modelo' => 'Radicado',
             'modelo_id' => $radicado->id,

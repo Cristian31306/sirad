@@ -16,7 +16,6 @@ class Radicado extends Model
         'funcionario_id',
         'estado',
         'fecha_salida',
-        'estado',
         'motivo_anulacion',
         'anulado_por',
         'empresa',

@@ -29,8 +29,8 @@ class CheckVencimientos extends Command
             $fechaLimite = Carbon::parse($radicado->fecha_limite);
             
             // Destinatarios según regla de negocio
-            $usuarios = User::where('role', 'user')->pluck('email')->toArray();
-            $todos = User::whereIn('role', ['admin', 'user'])->pluck('email')->toArray();
+            $usuarios = User::where('role', 'usuario')->pluck('email')->toArray();
+            $todos = User::whereIn('role', ['admin', 'usuario'])->pluck('email')->toArray();
             
             if ($hoy->greaterThan($fechaLimite)) {
                 if ($radicado->estado !== 'vencido') {

@@ -11,7 +11,7 @@ class SolicitudEdicionController extends Controller
 {
     public function index(Request $request)
     {
-        Gate::authorize('admin');
+        Gate::authorize('solicitudes.gestionar');
         
         $query = SolicitudEdicion::with(['user', 'radicado']);
         
@@ -50,7 +50,7 @@ class SolicitudEdicionController extends Controller
 
         SolicitudEdicion::create([
             'radicado_id' => $radicado->id,
-            'user_id' => auth()->id(),
+            'user_id' => $request->user()->id,
             'datos_propuestos' => $request->only(['empresa', 'asunto', 'medio', 'prioridad', 'observaciones', 'responsable_id']),
             'estado' => 'pendiente',
         ]);
@@ -60,7 +60,7 @@ class SolicitudEdicionController extends Controller
 
     public function update(Request $request, SolicitudEdicion $solicitud)
     {
-        Gate::authorize('admin');
+        Gate::authorize('solicitudes.gestionar');
         
         if ($request->action === 'aprobar') {
             $solicitud->update(['estado' => 'aprobada']);
