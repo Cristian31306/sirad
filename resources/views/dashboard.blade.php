@@ -1,9 +1,10 @@
 <x-app-layout>
     <!-- Tarjetas de Resumen (Semáforo) -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        
+
         <!-- Pendientes -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
+        <div
+            class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="absolute w-2 h-full bg-green-500 left-0 top-0"></div>
             <div>
                 <div class="text-4xl font-bold text-green-600 mb-1">{{ $totales['pendientes'] }}</div>
@@ -16,9 +17,10 @@
                 <i class="ph ph-file-text text-3xl"></i>
             </div>
         </div>
-        
+
         <!-- Alerta -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
+        <div
+            class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="absolute w-2 h-full bg-yellow-500 left-0 top-0"></div>
             <div>
                 <div class="text-4xl font-bold text-yellow-500 mb-1">{{ $totales['alertas'] }}</div>
@@ -33,7 +35,8 @@
         </div>
 
         <!-- Vencidos -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
+        <div
+            class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="absolute w-2 h-full bg-red-500 left-0 top-0"></div>
             <div>
                 <div class="text-4xl font-bold text-red-500 mb-1">{{ $totales['vencidos'] }}</div>
@@ -48,7 +51,8 @@
         </div>
 
         <!-- Completados -->
-        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
+        <div
+            class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-center justify-between relative overflow-hidden group hover:shadow-md transition">
             <div class="absolute w-2 h-full bg-gray-400 left-0 top-0"></div>
             <div>
                 <div class="text-4xl font-bold text-gray-700 mb-1">{{ $totales['completados'] }}</div>
@@ -72,11 +76,12 @@
                 <i class="ph ph-star text-yellow-500 text-xl"></i>
                 Próximos Vencimientos
             </h3>
-            <a href="{{ route('radicados.index') }}" class="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
+            <a href="{{ route('radicados.index') }}"
+                class="text-sm text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
                 Ver todos <i class="ph ph-arrow-right"></i>
             </a>
         </div>
-        
+
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
@@ -86,12 +91,13 @@
                         <th class="px-6 py-4 font-semibold">Responsable</th>
                         <th class="px-6 py-4 font-semibold">Prioridad</th>
                         <th class="px-6 py-4 font-semibold">Estado</th>
-                        <th class="px-6 py-4 font-semibold">Vence en</th>
+                        <th class="px-6 py-4 font-semibold">Vence el</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50 text-sm text-gray-700">
                     @forelse($proximosVencimientos->take(10) as $radicado)
-                        <tr class="hover:bg-blue-50/30 transition cursor-pointer" onclick="window.location='{{ route('radicados.show', $radicado) }}'">
+                        <tr class="hover:bg-blue-50/30 transition cursor-pointer"
+                            onclick="window.location='{{ route('radicados.show', $radicado) }}'">
                             <td class="px-6 py-4 font-bold text-gray-900">{{ $radicado->numero_radicado }}</td>
                             <td class="px-6 py-4">{{ Str::limit($radicado->remitente, 20) }}</td>
                             <td class="px-6 py-4">
@@ -103,47 +109,48 @@
                             </td>
                             <td class="px-6 py-4">
                                 @if($radicado->prioridad == 'Alta')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100">
+                                    <span
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-100">
                                         Alta
                                     </span>
                                 @elseif($radicado->prioridad == 'Media')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-100">
+                                    <span
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-100">
                                         Media
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">
+                                    <span
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-100">
                                         Baja
                                     </span>
                                 @endif
                             </td>
                             <td class="px-6 py-4">
                                 @if($radicado->estado == 'pendiente')
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
+                                    <span
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200">
                                         <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Pendiente
                                     </span>
                                 @elseif($radicado->estado == 'alerta')
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200">
+                                    <span
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-50 text-yellow-700 border border-yellow-200">
                                         <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span> En Alerta
                                     </span>
                                 @elseif($radicado->estado == 'vencido')
-                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                                    <span
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
                                         <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span> Vencido
                                     </span>
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-gray-500">
                                 @php
-                                    $dias = now()->diffInDays($radicado->fecha_limite, false);
+                                    $fechaLimite = \Carbon\Carbon::parse($radicado->fecha_limite);
                                 @endphp
-                                @if($dias < 0)
-                                    <span class="text-red-600 font-bold">Vencido</span>
-                                @elseif($dias == 0)
-                                    <span class="text-yellow-600 font-bold">Hoy</span>
-                                @elseif($dias == 1)
-                                    Mañana
-                                @else
-                                    <span class="font-medium">{{ $dias }} días</span>
-                                @endif
+                                <span
+                                    class="font-medium {{ $fechaLimite->isPast() && !$fechaLimite->isToday() ? 'text-red-600 font-bold' : ($fechaLimite->isToday() ? 'text-yellow-600 font-bold' : '') }}">
+                                    {{ $fechaLimite->format('d/m/Y') }}
+                                </span>
                             </td>
                         </tr>
                     @empty

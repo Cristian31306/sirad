@@ -48,6 +48,10 @@ class RadicadoController extends Controller
             $query->whereDate('fecha_radicacion', '<=', $request->fecha_fin);
         }
 
+        if ($request->has('prioridad') && $request->prioridad != '') {
+            $query->where('prioridad', $request->prioridad);
+        }
+
         return $query;
     }
 
