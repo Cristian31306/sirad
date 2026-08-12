@@ -88,7 +88,7 @@
                     <tr class="bg-white text-xs text-gray-500 uppercase tracking-wider border-b border-gray-100">
                         <th class="px-6 py-4 font-semibold">Radicado</th>
                         <th class="px-6 py-4 font-semibold">Remitente</th>
-                        <th class="px-6 py-4 font-semibold">Responsable</th>
+                        <th class="px-6 py-4 font-semibold">Responsables</th>
                         <th class="px-6 py-4 font-semibold">Prioridad</th>
                         <th class="px-6 py-4 font-semibold">Estado</th>
                         <th class="px-6 py-4 font-semibold">Vence el</th>
@@ -101,8 +101,8 @@
                             <td class="px-6 py-4 font-bold text-gray-900">{{ $radicado->numero_radicado }}</td>
                             <td class="px-6 py-4">{{ Str::limit($radicado->remitente, 20) }}</td>
                             <td class="px-6 py-4">
-                                @if($radicado->responsable)
-                                    <span class="font-medium text-gray-700">{{ $radicado->responsable->nombre }}</span>
+                                @if($radicado->responsables->isNotEmpty())
+                                    <span class="font-medium text-gray-700">{{ $radicado->responsables->pluck('nombre')->implode(', ') }}</span>
                                 @else
                                     <span class="text-gray-400 italic">No asignado</span>
                                 @endif

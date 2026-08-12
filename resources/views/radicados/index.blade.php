@@ -183,13 +183,8 @@
                                 @endif
                             </a>
                         </th>
-                        <th class="px-6 py-4 font-semibold">
-                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'responsable', 'direction' => request('sort') == 'responsable' && request('direction') == 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-800">
-                                Responsable
-                                @if(request('sort') == 'responsable')
-                                    <i class="ph ph-caret-{{ request('direction') == 'asc' ? 'up' : 'down' }}"></i>
-                                @endif
-                            </a>
+                        <th class="px-6 py-4 font-semibold text-gray-500">
+                            Responsables
                         </th>
                         <th class="px-6 py-4 font-semibold">
                             <a href="{{ request()->fullUrlWithQuery(['sort' => 'prioridad', 'direction' => request('sort') == 'prioridad' && request('direction') == 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-800">
@@ -230,7 +225,7 @@
                                 {{ Str::limit($radicado->remitente, 25) }}<br>
                                 <span class="text-xs text-gray-500">{{ Str::limit($radicado->empresa, 25) }}</span>
                             </td>
-                            <td class="px-6 py-4">{{ $radicado->responsable->nombre ?? 'N/A' }}</td>
+                            <td class="px-6 py-4">{{ $radicado->responsables->pluck('nombre')->implode(', ') ?: 'N/A' }}</td>
                             <td class="px-6 py-4 text-gray-500">{{ $radicado->prioridad }}</td>
                             <td class="px-6 py-4">
                                 @if($radicado->estado == 'pendiente')

@@ -3,10 +3,8 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\Facades\Lang;
 
 class ResetPasswordEs extends Notification
 {
@@ -49,7 +47,7 @@ class ResetPasswordEs extends Notification
             ->action('Restablecer Contraseña', $url)
             ->line('Este enlace de restablecimiento de contraseña expirará en 60 minutos.')
             ->line('Si no solicitaste un restablecimiento de contraseña, no es necesario realizar ninguna otra acción.')
-            ->salutation('Saludos, ' . config('app.name'));
+            ->salutation('Saludos, '.config('app.name'));
     }
 
     /**

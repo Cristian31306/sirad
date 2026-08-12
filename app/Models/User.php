@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\ResetPasswordEs;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -68,7 +69,7 @@ class User extends Authenticatable
                 'label' => 'Ver Auditoría',
                 'description' => 'Acceder al registro de acciones del sistema.',
             ],
-        ]
+        ],
     ];
 
     public function isAdmin()
@@ -92,11 +93,12 @@ class User extends Authenticatable
         }
 
         $permisos = $this->permisos ?? [];
+
         return in_array($permiso, $permisos);
     }
 
     public function sendPasswordResetNotification($token)
     {
-        $this->notify(new \App\Notifications\ResetPasswordEs($token));
+        $this->notify(new ResetPasswordEs($token));
     }
 }

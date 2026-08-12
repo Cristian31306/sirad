@@ -1,16 +1,16 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\RadicadoController;
-use App\Http\Controllers\FestivoController;
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\AuditoriaController;
+use App\Http\Controllers\Auth\ForcePasswordChangeController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FestivoController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RadicadoController;
+use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\SolicitudEdicionController;
 use App\Http\Controllers\TipoTramiteController;
 use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -27,12 +27,12 @@ Route::middleware(['auth', 'verified', 'force_password'])->group(function () {
     Route::patch('radicados/{radicado}/cierre', [RadicadoController::class, 'updateCierre'])->name('radicados.cierre');
 
     Route::resource('responsables', ResponsableController::class)->except(['show'])->middleware('can:responsables.gestionar');
-    
+
     Route::resource('tipos-tramites', TipoTramiteController::class)->except(['show'])->parameters([
-        'tipos-tramites' => 'tipoTramite'
+        'tipos-tramites' => 'tipoTramite',
     ])->middleware('can:tipos_tramites.gestionar');
     Route::patch('tipos-tramites/{tipoTramite}/toggle', [TipoTramiteController::class, 'toggle'])->name('tipos-tramites.toggle')->middleware('can:tipos_tramites.gestionar');
-    
+
     Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index')->middleware('can:auditoria.ver');
 
     Route::get('/solicitudes', [SolicitudEdicionController::class, 'index'])->name('solicitudes.index')->middleware('can:solicitudes.gestionar');
@@ -47,8 +47,8 @@ Route::middleware(['auth', 'verified', 'force_password'])->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/force-password-change', [App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'show'])->name('password.force.change');
-    Route::post('/force-password-change', [App\Http\Controllers\Auth\ForcePasswordChangeController::class, 'update'])->name('password.force.update');
+    Route::get('/force-password-change', [ForcePasswordChangeController::class, 'show'])->name('password.force.change');
+    Route::post('/force-password-change', [ForcePasswordChangeController::class, 'update'])->name('password.force.update');
 });
 
 require __DIR__.'/auth.php';

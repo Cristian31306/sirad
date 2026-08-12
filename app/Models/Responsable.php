@@ -13,6 +13,6 @@ class Responsable extends Model
 
     public function radicados()
     {
-        return $this->hasMany(Radicado::class);
+        return $this->belongsToMany(Radicado::class, 'radicado_responsable');
     }
 }

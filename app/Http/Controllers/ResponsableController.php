@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Responsable;
 use App\Models\Auditoria;
+use App\Models\Responsable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -12,24 +12,25 @@ class ResponsableController extends Controller
     public function index(Request $request)
     {
         Gate::authorize('admin');
-        
+
         $query = Responsable::query();
-        
+
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->where('nombre', 'like', "%{$search}%")
-                  ->orWhere('correo', 'like', "%{$search}%")
-                  ->orWhere('especialidad', 'like', "%{$search}%");
+                ->orWhere('correo', 'like', "%{$search}%")
+                ->orWhere('especialidad', 'like', "%{$search}%");
         }
-        
+
         $sort = $request->get('sort', 'nombre');
         $direction = $request->get('direction', 'asc');
-        
+
         $query->orderBy($sort, $direction);
-        
+
         $perPage = $request->get('per_page', 10);
         $responsables = $query->paginate($perPage)->withQueryString();
         $especialidades = Responsable::whereNotNull('especialidad')->distinct()->pluck('especialidad');
+
         return view('responsables.index', compact('responsables', 'especialidades', 'sort', 'direction'));
     }
 
@@ -37,6 +38,7 @@ class ResponsableController extends Controller
     {
         Gate::authorize('admin');
         $especialidades = Responsable::whereNotNull('especialidad')->distinct()->pluck('especialidad');
+
         return view('responsables.create', compact('especialidades'));
     }
 
@@ -66,6 +68,7 @@ class ResponsableController extends Controller
     {
         Gate::authorize('admin');
         $especialidades = Responsable::whereNotNull('especialidad')->distinct()->pluck('especialidad');
+
         return view('responsables.edit', compact('responsable', 'especialidades'));
     }
 
@@ -94,12 +97,12 @@ class ResponsableController extends Controller
     public function destroy(Responsable $responsable)
     {
         Gate::authorize('admin');
-        
+
         $responsableArray = $responsable->toArray();
         $responsableId = $responsable->id;
-        
+
         $responsable->delete();
-        
+
         Auditoria::create([
             'user_id' => auth()->id(),
             'accion' => 'Eliminó un responsable',
@@ -107,7 +110,7 @@ class ResponsableController extends Controller
             'modelo_id' => $responsableId,
             'detalles' => $responsableArray,
         ]);
-        
+
         return redirect()->route('responsables.index')->with('success', 'Responsable eliminado correctamente.');
     }
 }

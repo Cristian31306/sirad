@@ -11,7 +11,7 @@ class ForcePasswordChangeController extends Controller
 {
     public function show()
     {
-        if (!auth()->user()->must_change_password) {
+        if (! auth()->user()->must_change_password) {
             return redirect()->route('dashboard');
         }
 

@@ -12,4 +12,4 @@ Schedule::command('radicados:check-vencimientos')->dailyAt('08:00');
 
 // Sincronizar festivos del año actual y el próximo automáticamente cada mes
 Schedule::command('sirad:sync-festivos')->monthly();
-Schedule::command('sirad:sync-festivos ' . (date('Y') + 1))->monthly();
+Schedule::command('sirad:sync-festivos '.(date('Y') + 1))->monthly();

@@ -13,14 +13,14 @@ class DiasHabilesService
     public function calcularFechaLimite(Carbon $fechaInicial, int $diasHabiles = 15): Carbon
     {
         $fecha = $fechaInicial->copy();
-        
+
         while ($diasHabiles > 0) {
             $fecha->addDay();
             if ($this->esDiaHabil($fecha)) {
                 $diasHabiles--;
             }
         }
-        
+
         return $fecha;
     }
 

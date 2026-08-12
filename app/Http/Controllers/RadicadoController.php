@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NuevaRadicacionMail;
+use App\Models\Auditoria;
 use App\Models\Radicado;
 use App\Models\Responsable;
 use App\Models\TipoTramite;
-use App\Models\Auditoria;
 use App\Services\DiasHabilesService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Auth;
 
 class RadicadoController extends Controller
 {
@@ -25,15 +25,15 @@ class RadicadoController extends Controller
 
     private function buildIndexQuery(Request $request)
     {
-        $query = Radicado::with('responsable', 'tipoTramite');
+        $query = Radicado::with('responsables', 'tipoTramite');
 
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('numero_radicado', 'like', "%{$search}%")
-                  ->orWhere('remitente', 'like', "%{$search}%")
-                  ->orWhere('empresa', 'like', "%{$search}%")
-                  ->orWhere('asunto', 'like', "%{$search}%");
+                    ->orWhere('remitente', 'like', "%{$search}%")
+                    ->orWhere('empresa', 'like', "%{$search}%")
+                    ->orWhere('asunto', 'like', "%{$search}%");
             });
         }
 
@@ -59,21 +59,15 @@ class RadicadoController extends Controller
     public function index(Request $request)
     {
         $query = $this->buildIndexQuery($request);
-        
+
         $sort = $request->get('sort', 'created_at');
         $direction = $request->get('direction', 'desc');
-        
-        // Custom sorting for related model
-        if ($sort == 'responsable') {
-            $query->join('responsables', 'radicados.responsable_id', '=', 'responsables.id')
-                  ->orderBy('responsables.nombre', $direction)
-                  ->select('radicados.*'); // ensure we only select radicados columns
-        } else {
-            $query->orderBy($sort, $direction);
-        }
+
+        $query->orderBy($sort, $direction);
 
         $perPage = $request->get('per_page', 10);
         $radicados = $query->paginate($perPage)->withQueryString();
+
         return view('radicados.index', compact('radicados', 'sort', 'direction'));
     }
 
@@ -82,29 +76,23 @@ class RadicadoController extends Controller
         $query = $this->buildIndexQuery($request);
         $sort = $request->get('sort', 'created_at');
         $direction = $request->get('direction', 'desc');
-        
-        if ($sort == 'responsable') {
-            $query->join('responsables', 'radicados.responsable_id', '=', 'responsables.id')
-                  ->orderBy('responsables.nombre', $direction)
-                  ->select('radicados.*');
-        } else {
-            $query->orderBy($sort, $direction);
-        }
+
+        $query->orderBy($sort, $direction);
 
         $radicados = $query->get();
 
         $headers = [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=radicados_" . date('Ymd_His') . ".csv",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+            'Content-type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=radicados_'.date('Ymd_His').'.csv',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
         ];
 
-        $callback = function() use($radicados) {
+        $callback = function () use ($radicados) {
             $file = fopen('php://output', 'w');
             // Add UTF-8 BOM for Excel
-            fputs($file, "\xEF\xBB\xBF");
+            fwrite($file, "\xEF\xBB\xBF");
             fputcsv($file, ['Numero Radicado', 'Fecha Radicacion', 'Remitente', 'Asunto', 'Medio', 'Responsable', 'Estado', 'Fecha Limite'], ';');
 
             foreach ($radicados as $r) {
@@ -114,9 +102,9 @@ class RadicadoController extends Controller
                     $r->remitente,
                     $r->asunto,
                     $r->medio,
-                    $r->responsable ? $r->responsable->nombre : 'N/A',
+                    $r->responsables->pluck('nombre')->implode(', ') ?: 'N/A',
                     strtoupper($r->estado),
-                    $r->fecha_limite
+                    $r->fecha_limite,
                 ], ';');
             }
 
@@ -130,6 +118,7 @@ class RadicadoController extends Controller
     {
         $responsables = Responsable::all();
         $tiposTramites = TipoTramite::where('activo', true)->get();
+
         return view('radicados.create', compact('responsables', 'tiposTramites'));
     }
 
@@ -146,11 +135,12 @@ class RadicadoController extends Controller
             'medio' => 'required|string|max:255',
             'prioridad' => 'required|in:Alta,Media,Baja',
             'observaciones' => 'nullable|string',
-            'responsable_id' => 'required|exists:responsables,id',
+            'responsables' => 'required|array|min:1',
+            'responsables.*' => 'exists:responsables,id',
         ]);
 
         $tipoTramite = TipoTramite::findOrFail($request->tipo_tramite_id);
-        
+
         $fechaRadicacion = Carbon::parse($request->fecha_radicacion);
         $fechaLimite = $this->diasHabilesService->calcularFechaLimite($fechaRadicacion, $tipoTramite->dias_habiles);
 
@@ -166,26 +156,32 @@ class RadicadoController extends Controller
             'prioridad' => $request->prioridad,
             'observaciones' => $request->observaciones,
             'fecha_limite' => $fechaLimite->toDateString(),
-            'responsable_id' => $request->responsable_id,
             'estado' => 'pendiente',
         ]);
+
+        $radicado->responsables()->attach($request->responsables);
 
         Auditoria::create([
             'user_id' => Auth::id(),
             'accion' => 'Creó un radicado',
             'modelo' => 'Radicado',
             'modelo_id' => $radicado->id,
-            'detalles' => $radicado->toArray(),
+            'detalles' => array_merge($radicado->toArray(), ['responsables' => $request->responsables]),
         ]);
 
-        if ($radicado->responsable) {
-            // Note: Update mail later to new Mailable or edit existing NuevaRadicacionMail
-            try {
-                Mail::to($radicado->responsable->correo)->queue(new \App\Mail\NuevaRadicacionMail($radicado));
-            } catch (\Exception $e) { \Log::error("Mail Error: " . $e->getMessage()); }
+        if ($radicado->responsables->isNotEmpty()) {
+            foreach ($radicado->responsables as $resp) {
+                try {
+                    Mail::to($resp->correo)->queue(new NuevaRadicacionMail($radicado));
+                } catch (\Exception $e) {
+                    \Log::error('Mail Error: '.$e->getMessage());
+                }
+            }
         }
 
-        return redirect()->route('radicados.index')->with('success', 'Radicado creado correctamente. Asignado a: ' . ($radicado->responsable->nombre ?? 'N/A'));
+        $nombresResponsables = $radicado->responsables->pluck('nombre')->implode(', ') ?: 'N/A';
+
+        return redirect()->route('radicados.index')->with('success', 'Radicado creado correctamente. Asignado a: '.$nombresResponsables);
     }
 
     public function update(Request $request, Radicado $radicado)
@@ -193,7 +189,7 @@ class RadicadoController extends Controller
         Gate::authorize('radicados.editar');
 
         $request->validate([
-            'numero_radicado' => 'required|string|max:255|unique:radicados,numero_radicado,' . $radicado->id,
+            'numero_radicado' => 'required|string|max:255|unique:radicados,numero_radicado,'.$radicado->id,
             'fecha_radicacion' => 'required|date',
             'hora_recepcion' => 'required|date_format:H:i',
             'remitente' => 'required|string|max:255',
@@ -203,7 +199,8 @@ class RadicadoController extends Controller
             'prioridad' => 'required|in:Alta,Media,Baja',
             'asunto' => 'required|string',
             'observaciones' => 'nullable|string',
-            'responsable_id' => 'required|exists:responsables,id',
+            'responsables' => 'required|array|min:1',
+            'responsables.*' => 'exists:responsables,id',
         ]);
 
         $tipoTramite = TipoTramite::find($request->tipo_tramite_id);
@@ -221,15 +218,16 @@ class RadicadoController extends Controller
             'asunto' => $request->asunto,
             'observaciones' => $request->observaciones,
             'fecha_limite' => $fechaLimite->toDateString(),
-            'responsable_id' => $request->responsable_id,
         ]);
+
+        $radicado->responsables()->sync($request->responsables);
 
         Auditoria::create([
             'user_id' => Auth::id(),
             'accion' => 'Editó un radicado',
             'modelo' => 'Radicado',
             'modelo_id' => $radicado->id,
-            'detalles' => $request->only(['numero_radicado', 'fecha_radicacion', 'hora_recepcion', 'remitente', 'empresa', 'tipo_tramite_id', 'medio', 'prioridad', 'asunto', 'observaciones', 'responsable_id']),
+            'detalles' => $request->only(['numero_radicado', 'fecha_radicacion', 'hora_recepcion', 'remitente', 'empresa', 'tipo_tramite_id', 'medio', 'prioridad', 'asunto', 'observaciones', 'responsables']),
         ]);
 
         return redirect()->route('radicados.show', $radicado)->with('success', 'Radicado actualizado correctamente.');
@@ -237,7 +235,8 @@ class RadicadoController extends Controller
 
     public function edit(Radicado $radicado)
     {
-        $radicado->load('responsable', 'anulador', 'tipoTramite');
+        $radicado->load('responsables', 'anulador', 'tipoTramite');
+
         return view('radicados.show', compact('radicado'));
     }
 
@@ -246,6 +245,7 @@ class RadicadoController extends Controller
         $radicado->load('responsable', 'anulador', 'tipoTramite');
         $tiposTramites = TipoTramite::where('activo', true)->get();
         $responsables = Responsable::all();
+
         return view('radicados.show', compact('radicado', 'tiposTramites', 'responsables'));
     }
 

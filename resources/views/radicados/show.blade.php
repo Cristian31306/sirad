@@ -102,12 +102,13 @@
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Responsable</label>
-                                    <select name="responsable_id" class="w-full border-gray-300 rounded-xl" required>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Responsables</label>
+                                    <select name="responsables[]" class="w-full border-gray-300 rounded-xl" multiple required size="3">
                                         @foreach($responsables as $resp)
-                                            <option value="{{ $resp->id }}" {{ $radicado->responsable_id == $resp->id ? 'selected' : '' }}>{{ $resp->nombre }}</option>
+                                            <option value="{{ $resp->id }}" {{ $radicado->responsables->contains($resp->id) ? 'selected' : '' }}>{{ $resp->nombre }}</option>
                                         @endforeach
                                     </select>
+                                    <p class="text-xs text-gray-500 mt-1">Mantenga presionada la tecla Ctrl/Command para seleccionar múltiples.</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-1">Medio</label>
@@ -216,17 +217,23 @@
                 </div>
                 @endif
                 <div class="pt-2 border-t border-gray-50">
-                    <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Responsable</span>
-                    <div class="flex items-center gap-2 mt-1">
-                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
-                            {{ substr($radicado->responsable->nombre ?? '?', 0, 1) }}
-                        </div>
-                        <div>
-                            <span class="font-medium text-gray-900 block leading-tight">{{ $radicado->responsable->nombre ?? 'No asignado' }}</span>
-                            @if($radicado->responsable && $radicado->responsable->especialidad)
-                                <span class="text-xs text-gray-500">{{ $radicado->responsable->especialidad }}</span>
-                            @endif
-                        </div>
+                    <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Responsables</span>
+                    <div class="flex flex-col gap-2 mt-1">
+                        @forelse($radicado->responsables as $resp)
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                                    {{ substr($resp->nombre, 0, 1) }}
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-900 block leading-tight">{{ $resp->nombre }}</span>
+                                    @if($resp->especialidad)
+                                        <span class="text-xs text-gray-500">{{ $resp->especialidad }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <span class="text-sm text-gray-500">No asignado</span>
+                        @endforelse
                     </div>
                 </div>
                 
@@ -282,7 +289,7 @@
                     <div class="absolute w-4 h-4 bg-blue-500 rounded-full border-4 border-white -left-[9px] top-1 shadow-sm"></div>
                     <div class="text-xs text-gray-400 mb-1">{{ $radicado->fecha_radicacion->format('d/m/Y') }}</div>
                     <h4 class="text-sm font-bold text-gray-900">Asignado a</h4>
-                    <p class="text-xs text-gray-500 mt-1">{{ $radicado->responsable->nombre ?? 'Responsable' }}</p>
+                    <p class="text-xs text-gray-500 mt-1">{{ $radicado->responsables->pluck('nombre')->implode(', ') ?: 'Responsable' }}</p>
                 </div>
 
                 <!-- Paso 3: Estado Actual -->

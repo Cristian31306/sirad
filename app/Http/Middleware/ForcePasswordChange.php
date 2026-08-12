@@ -17,7 +17,7 @@ class ForcePasswordChange
     {
         if (auth()->check() && auth()->user()->must_change_password) {
             // Permitir acceso a las rutas necesarias para cambiar la contraseña
-            if (!$request->routeIs('password.force.change') && !$request->routeIs('password.force.update') && !$request->routeIs('logout')) {
+            if (! $request->routeIs('password.force.change') && ! $request->routeIs('password.force.update') && ! $request->routeIs('logout')) {
                 return redirect()->route('password.force.change');
             }
         }

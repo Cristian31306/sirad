@@ -1,10 +1,10 @@
 <?php
 
+use App\Models\TipoTramite;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
-use App\Models\TipoTramite;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -16,12 +16,12 @@ return new class extends Migration
         // 1. Create default data
         $derechoPeticion = TipoTramite::create([
             'nombre' => 'Derecho de Petición',
-            'dias_habiles' => 15
+            'dias_habiles' => 15,
         ]);
-        
+
         $solicitudVisita = TipoTramite::create([
             'nombre' => 'Solicitud de Visita',
-            'dias_habiles' => 30
+            'dias_habiles' => 30,
         ]);
 
         // 2. Add new column to radicados

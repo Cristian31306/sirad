@@ -15,7 +15,7 @@ return new class extends Migration
             $table->text('observaciones')->nullable()->after('estado');
             $table->time('hora_recepcion')->nullable()->after('fecha_radicacion');
             $table->foreignId('responsable_id')->nullable()->after('funcionario_id')->constrained('responsables')->nullOnDelete();
-            
+
             $table->unsignedBigInteger('funcionario_id')->nullable()->change();
         });
     }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\ForcePasswordChange;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,8 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'role' => \App\Http\Middleware\CheckRole::class,
-            'force_password' => \App\Http\Middleware\ForcePasswordChange::class,
+            'role' => CheckRole::class,
+            'force_password' => ForcePasswordChange::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

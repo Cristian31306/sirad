@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,14 +21,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Illuminate\Support\Facades\Gate::define('admin', function ($user) {
+        Gate::define('admin', function ($user) {
             return $user->isAdmin();
         });
 
         // Registrar dinámicamente un Gate por cada permiso definido en el modelo User
-        foreach (\App\Models\User::PERMISOS as $grupo => $permisos) {
+        foreach (User::PERMISOS as $grupo => $permisos) {
             foreach ($permisos as $codigo => $etiqueta) {
-                \Illuminate\Support\Facades\Gate::define($codigo, function ($user) use ($codigo) {
+                Gate::define($codigo, function ($user) use ($codigo) {
                     return $user->hasPermiso($codigo);
                 });
             }

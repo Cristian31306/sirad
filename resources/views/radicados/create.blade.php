@@ -99,15 +99,15 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                         
                         <div>
-                            <label for="responsable_id" class="block text-sm font-semibold text-gray-700 mb-2">Responsable (Destinatario) <span class="text-red-500">*</span></label>
-                            <select id="responsable_id" name="responsable_id" class="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm bg-gray-50 px-4 py-2.5" required>
-                                <option value="">Seleccione al responsable...</option>
+                            <label for="responsables" class="block text-sm font-semibold text-gray-700 mb-2">Responsable(s) (Destinatario) <span class="text-red-500">*</span></label>
+                            <select id="responsables" name="responsables[]" class="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm bg-gray-50 px-4 py-2.5" multiple required size="4">
                                 @foreach($responsables as $responsable)
-                                    <option value="{{ $responsable->id }}" {{ old('responsable_id') == $responsable->id ? 'selected' : '' }}>
+                                    <option value="{{ $responsable->id }}" {{ in_array($responsable->id, old('responsables', [])) ? 'selected' : '' }}>
                                         {{ $responsable->nombre }} {{ $responsable->especialidad ? ' - ' . $responsable->especialidad : '' }}
                                     </option>
                                 @endforeach
                             </select>
+                            <p class="text-xs text-gray-500 mt-1">Mantenga presionada la tecla Ctrl (Windows) o Command (Mac) para seleccionar múltiples.</p>
                             @if($responsables->isEmpty())
                                 <p class="text-xs text-red-500 mt-2 font-semibold">⚠️ No hay responsables registrados. Solicita a un administrador que agregue uno.</p>
                             @endif

@@ -23,7 +23,6 @@ class Radicado extends Model
         'prioridad',
         'observaciones',
         'hora_recepcion',
-        'responsable_id',
     ];
 
     protected $casts = [
@@ -37,9 +36,9 @@ class Radicado extends Model
         return $this->belongsTo(User::class, 'funcionario_id');
     }
 
-    public function responsable()
+    public function responsables()
     {
-        return $this->belongsTo(Responsable::class, 'responsable_id');
+        return $this->belongsToMany(Responsable::class, 'radicado_responsable');
     }
 
     public function anulador()

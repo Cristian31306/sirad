@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Festivo;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
-use App\Models\Festivo;
 
 class SyncFestivosCommand extends Command
 {
@@ -28,7 +28,7 @@ class SyncFestivosCommand extends Command
     public function handle()
     {
         $year = $this->argument('year') ?? date('Y');
-        
+
         $this->info("Obteniendo festivos de Colombia para el año {$year}...");
 
         $response = Http::withoutVerifying()->get("https://date.nager.at/api/v3/PublicHolidays/{$year}/CO");
@@ -47,7 +47,7 @@ class SyncFestivosCommand extends Command
 
             $this->info("¡Completado! Se sincronizaron {$count} festivos para el año {$year}.");
         } else {
-            $this->error("No se pudo obtener la información de la API. Código de estado: " . $response->status());
+            $this->error('No se pudo obtener la información de la API. Código de estado: '.$response->status());
         }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\Radicado;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -19,7 +20,7 @@ class AlertaVencimientoMail extends Mailable implements ShouldQueue
     /**
      * Create a new message instance.
      */
-    public function __construct(\App\Models\Radicado $radicado)
+    public function __construct(Radicado $radicado)
     {
         $this->radicado = $radicado;
     }
@@ -30,7 +31,7 @@ class AlertaVencimientoMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'ALERTA DE VENCIMIENTO: ' . $this->radicado->numero_radicado,
+            subject: 'ALERTA DE VENCIMIENTO: '.$this->radicado->numero_radicado,
         );
     }
 
