@@ -98,16 +98,81 @@
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                         
-                        <div>
-                            <label for="responsables" class="block text-sm font-semibold text-gray-700 mb-2">Responsable(s) (Destinatario) <span class="text-red-500">*</span></label>
-                            <select id="responsables" name="responsables[]" class="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm bg-gray-50 px-4 py-2.5" multiple required size="4">
-                                @foreach($responsables as $responsable)
-                                    <option value="{{ $responsable->id }}" {{ in_array($responsable->id, old('responsables', [])) ? 'selected' : '' }}>
-                                        {{ $responsable->nombre }} {{ $responsable->especialidad ? ' - ' . $responsable->especialidad : '' }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">Mantenga presionada la tecla Ctrl (Windows) o Command (Mac) para seleccionar múltiples.</p>
+                        <div x-data="{
+                            items: {{ $responsables->map(function($r) { return ['id' => $r->id, 'nombre' => $r->nombre, 'especialidad' => $r->especialidad]; })->toJson() }},
+                            selectedIds: {{ json_encode(old('responsables', [])) }}.map(id => parseInt(id)),
+                            search: '',
+                            open: false,
+                            
+                            get selectedItems() {
+                                return this.selectedIds.map(id => this.items.find(i => i.id === id)).filter(Boolean);
+                            },
+                            
+                            get filteredAvailable() {
+                                if (this.search === '') {
+                                    return this.items.filter(item => !this.selectedIds.includes(item.id));
+                                }
+                                return this.items.filter(item => !this.selectedIds.includes(item.id))
+                                    .filter(item => item.nombre.toLowerCase().includes(this.search.toLowerCase()) || 
+                                                   (item.especialidad && item.especialidad.toLowerCase().includes(this.search.toLowerCase())));
+                            },
+                            
+                            toggle(id) {
+                                if (this.selectedIds.includes(id)) {
+                                    this.selectedIds = this.selectedIds.filter(i => i !== id);
+                                } else {
+                                    this.selectedIds.push(id);
+                                }
+                                this.search = '';
+                                this.$refs.searchInput.focus();
+                            }
+                        }" class="relative w-full">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Responsable(s) (Destinatario) <span class="text-red-500">*</span></label>
+                            
+                            <!-- Inputs ocultos para envío -->
+                            <template x-for="id in selectedIds" :key="id">
+                                <input type="hidden" name="responsables[]" :value="id">
+                            </template>
+                            
+                            <!-- Tags de seleccionados -->
+                            <div class="mb-2 flex flex-wrap gap-2">
+                                <template x-for="item in selectedItems" :key="item.id">
+                                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium border border-blue-200 shadow-sm transition-all">
+                                        <span x-text="item.nombre"></span>
+                                        <button type="button" @click.prevent="toggle(item.id)" class="text-blue-500 hover:text-blue-900 focus:outline-none flex items-center justify-center p-0.5 rounded-full hover:bg-blue-200">
+                                            <i class="ph-bold ph-x text-xs"></i>
+                                        </button>
+                                    </span>
+                                </template>
+                                <span x-show="selectedIds.length === 0" class="text-sm text-gray-500 italic py-1">Ninguno seleccionado</span>
+                            </div>
+                        
+                            <!-- Buscador -->
+                            <div class="relative">
+                                <input type="text" x-model="search" x-ref="searchInput" placeholder="Buscar y agregar responsable..." class="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm bg-gray-50 px-4 py-2.5" @focus="open = true" @click.away="open = false" @keydown.escape="open = false">
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <i class="ph ph-magnifying-glass text-gray-400"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Lista de opciones desplegable -->
+                            <div x-show="open && filteredAvailable.length > 0" x-transition x-cloak class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                                <ul class="py-1">
+                                    <template x-for="item in filteredAvailable" :key="item.id">
+                                        <li>
+                                            <button type="button" @click.prevent="toggle(item.id)" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex flex-col focus:bg-blue-50 transition-colors">
+                                                <span class="font-medium" x-text="item.nombre"></span>
+                                                <span class="text-xs text-gray-500" x-text="item.especialidad" x-show="item.especialidad"></span>
+                                            </button>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                            
+                            <div x-show="open && filteredAvailable.length === 0 && search !== ''" x-cloak class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-4 text-sm text-gray-500 text-center">
+                                No se encontraron responsables que coincidan.
+                            </div>
+                            
                             @if($responsables->isEmpty())
                                 <p class="text-xs text-red-500 mt-2 font-semibold">⚠️ No hay responsables registrados. Solicita a un administrador que agregue uno.</p>
                             @endif
