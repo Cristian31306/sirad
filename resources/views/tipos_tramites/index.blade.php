@@ -66,6 +66,7 @@
                                 @endif
                             </a>
                         </th>
+                        <th class="px-6 py-4 font-semibold text-center">Estado</th>
                         <th class="px-6 py-4 font-semibold text-right">Acciones</th>
                     </tr>
                 </thead>
@@ -74,17 +75,24 @@
                         <tr class="hover:bg-blue-50/30 transition">
                             <td class="px-6 py-4 font-bold text-gray-900">{{ $tipo->nombre }}</td>
                             <td class="px-6 py-4 text-gray-600">{{ $tipo->dias_habiles }} días</td>
+                            <td class="px-6 py-4 text-center">
+                                @if($tipo->activo)
+                                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Activo</span>
+                                @else
+                                    <span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">Suspendido</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-3">
                                     <a href="{{ route('tipos-tramites.edit', $tipo) }}" class="text-blue-500 hover:text-blue-700 transition" title="Editar">
                                         <i class="ph ph-pencil-simple text-lg"></i>
                                     </a>
                                     
-                                    <form action="{{ route('tipos-tramites.destroy', $tipo) }}" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este tipo de trámite?');" class="inline">
+                                    <form action="{{ route('tipos-tramites.toggle', $tipo) }}" method="POST" onsubmit="return confirm('¿Estás seguro de {{ $tipo->activo ? 'suspender' : 'activar' }} este tipo de trámite?');" class="inline">
                                         @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-500 hover:text-red-700 transition" title="Eliminar">
-                                            <i class="ph ph-trash text-lg"></i>
+                                        @method('PATCH')
+                                        <button type="submit" class="{{ $tipo->activo ? 'text-orange-500 hover:text-orange-700' : 'text-green-500 hover:text-green-700' }} transition" title="{{ $tipo->activo ? 'Suspender' : 'Activar' }}">
+                                            <i class="ph {{ $tipo->activo ? 'ph-pause-circle' : 'ph-play-circle' }} text-lg"></i>
                                         </button>
                                     </form>
                                 </div>

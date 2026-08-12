@@ -9,5 +9,5 @@ class TipoTramite extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre', 'dias_habiles'];
+    protected $fillable = ['nombre', 'dias_habiles', 'activo'];
 }

@@ -82,4 +82,15 @@ class TipoTramiteController extends Controller
 
         return redirect()->route('tipos-tramites.index')->with('success', 'Tipo de Trámite eliminado correctamente.');
     }
+    public function toggle(TipoTramite $tipoTramite)
+    {
+        Gate::authorize('admin');
+        
+        $tipoTramite->activo = !$tipoTramite->activo;
+        $tipoTramite->save();
+
+        $mensaje = $tipoTramite->activo ? 'activado' : 'suspendido';
+
+        return redirect()->route('tipos-tramites.index')->with('success', "Tipo de Trámite {$mensaje} correctamente.");
+    }
 }

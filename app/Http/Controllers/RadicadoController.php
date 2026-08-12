@@ -129,7 +129,7 @@ class RadicadoController extends Controller
     public function create()
     {
         $responsables = Responsable::all();
-        $tiposTramites = TipoTramite::all();
+        $tiposTramites = TipoTramite::where('activo', true)->get();
         return view('radicados.create', compact('responsables', 'tiposTramites'));
     }
 
@@ -244,7 +244,7 @@ class RadicadoController extends Controller
     public function show(Radicado $radicado)
     {
         $radicado->load('responsable', 'anulador', 'tipoTramite');
-        $tiposTramites = TipoTramite::all();
+        $tiposTramites = TipoTramite::where('activo', true)->get();
         $responsables = Responsable::all();
         return view('radicados.show', compact('radicado', 'tiposTramites', 'responsables'));
     }

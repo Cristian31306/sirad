@@ -31,6 +31,7 @@ Route::middleware(['auth', 'verified', 'force_password'])->group(function () {
     Route::resource('tipos-tramites', TipoTramiteController::class)->except(['show'])->parameters([
         'tipos-tramites' => 'tipoTramite'
     ])->middleware('can:tipos_tramites.gestionar');
+    Route::patch('tipos-tramites/{tipoTramite}/toggle', [TipoTramiteController::class, 'toggle'])->name('tipos-tramites.toggle')->middleware('can:tipos_tramites.gestionar');
     
     Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index')->middleware('can:auditoria.ver');
 
