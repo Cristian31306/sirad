@@ -100,7 +100,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="3" class="px-6 py-12 text-center text-gray-400">
+                            <td colspan="4" class="px-6 py-12 text-center text-gray-400">
                                 <div class="flex flex-col items-center justify-center">
                                     <i class="ph ph-file-dashed text-4xl mb-2 text-gray-300"></i>
                                     <p>No se encontraron tipos de trámites.</p>

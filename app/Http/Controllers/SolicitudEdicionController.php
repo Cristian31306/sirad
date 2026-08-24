@@ -34,8 +34,9 @@ class SolicitudEdicionController extends Controller
 
         $perPage = $request->get('per_page', 10);
         $solicitudes = $query->paginate($perPage)->withQueryString();
+        $responsables = \App\Models\Responsable::all()->keyBy('id');
 
-        return view('solicitudes.index', compact('solicitudes', 'sort', 'direction'));
+        return view('solicitudes.index', compact('solicitudes', 'sort', 'direction', 'responsables'));
     }
 
     public function store(Request $request, Radicado $radicado)

@@ -34,7 +34,12 @@
                 <span>SIRAD</span>
             </div>
             <div class="content">
-                <h1 class="title">Hola {{ explode(' ', $radicado->responsable->nombre)[0] }},</h1>
+                @php
+                    $nombreDestinatario = $responsable 
+                        ? explode(' ', $responsable->nombre)[0] 
+                        : ($radicado->responsables->isNotEmpty() ? explode(' ', $radicado->responsables->first()->nombre)[0] : 'Funcionario');
+                @endphp
+                <h1 class="title">Hola {{ $nombreDestinatario }},</h1>
                 <p class="subtitle">Se le ha asignado un nuevo trámite en el sistema SIRAD.</p>
                 
                 <div class="card">

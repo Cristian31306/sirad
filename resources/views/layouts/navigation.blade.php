@@ -24,15 +24,7 @@
                 <span>Radicados</span>
             </a>
 
-            @if(auth()->check() && auth()->user()->role === 'jefe')
-                <a href="{{ route('festivos.index') }}" class="flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 {{ request()->routeIs('festivos.*') ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30 font-semibold' : 'text-gray-400 hover:text-white hover:bg-gray-800' }}">
-                    <div class="flex items-center gap-3">
-                        <i class="ph ph-calendar-blank text-xl"></i>
-                        <span>Festivos</span>
-                    </div>
-                    <i class="ph-fill ph-crown text-yellow-500 text-sm" title="Solo Jefe"></i>
-                </a>
-            @endif
+
 
             @if(\Illuminate\Support\Facades\Gate::any(['admin', 'usuarios.gestionar', 'responsables.gestionar', 'tipos_tramites.gestionar', 'solicitudes.gestionar', 'auditoria.ver']))
                 <div class="pt-4 pb-2">

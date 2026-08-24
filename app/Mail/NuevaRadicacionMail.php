@@ -16,13 +16,15 @@ class NuevaRadicacionMail extends Mailable implements ShouldQueue
     use Queueable, SerializesModels;
 
     public $radicado;
+    public $responsable;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(Radicado $radicado)
+    public function __construct(Radicado $radicado, $responsable = null)
     {
         $this->radicado = $radicado;
+        $this->responsable = $responsable;
     }
 
     /**

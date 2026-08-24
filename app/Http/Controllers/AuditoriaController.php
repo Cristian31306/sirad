@@ -10,7 +10,7 @@ class AuditoriaController extends Controller
 {
     public function index(Request $request)
     {
-        Gate::authorize('admin');
+        Gate::authorize('auditoria.ver');
 
         $query = Auditoria::with('user');
 

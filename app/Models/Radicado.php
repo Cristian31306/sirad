@@ -22,7 +22,10 @@ class Radicado extends Model
         'medio',
         'prioridad',
         'observaciones',
-        'hora_recepcion',
+        'archivo_entrada_path',
+        'archivo_entrada_nombre',
+        'archivo_salida_path',
+        'archivo_salida_nombre',
     ];
 
     protected $casts = [
@@ -30,6 +33,16 @@ class Radicado extends Model
         'fecha_limite' => 'date',
         'fecha_salida' => 'date',
     ];
+
+    public function hasArchivoEntrada(): bool
+    {
+        return ! empty($this->archivo_entrada_path);
+    }
+
+    public function hasArchivoSalida(): bool
+    {
+        return ! empty($this->archivo_salida_path);
+    }
 
     public function funcionario()
     {

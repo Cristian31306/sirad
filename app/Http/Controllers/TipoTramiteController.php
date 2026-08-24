@@ -13,7 +13,7 @@ class TipoTramiteController extends Controller
 {
     public function index(Request $request)
     {
-        Gate::authorize('admin');
+        Gate::authorize('tipos_tramites.gestionar');
 
         $query = TipoTramite::query();
 
@@ -34,14 +34,14 @@ class TipoTramiteController extends Controller
 
     public function create()
     {
-        Gate::authorize('admin');
+        Gate::authorize('tipos_tramites.gestionar');
 
         return view('tipos_tramites.create');
     }
 
     public function store(Request $request)
     {
-        Gate::authorize('admin');
+        Gate::authorize('tipos_tramites.gestionar');
 
         $request->validate([
             'nombre' => 'required|string|max:255|unique:tipo_tramites,nombre',
@@ -63,14 +63,14 @@ class TipoTramiteController extends Controller
 
     public function edit(TipoTramite $tipoTramite)
     {
-        Gate::authorize('admin');
+        Gate::authorize('tipos_tramites.gestionar');
 
         return view('tipos_tramites.edit', compact('tipoTramite'));
     }
 
     public function update(Request $request, TipoTramite $tipoTramite)
     {
-        Gate::authorize('admin');
+        Gate::authorize('tipos_tramites.gestionar');
 
         $request->validate([
             'nombre' => 'required|string|max:255|unique:tipo_tramites,nombre,'.$tipoTramite->id,
@@ -92,7 +92,7 @@ class TipoTramiteController extends Controller
 
     public function destroy(TipoTramite $tipoTramite)
     {
-        Gate::authorize('admin');
+        Gate::authorize('tipos_tramites.gestionar');
 
         // Check if there are related radicados
         if (Radicado::where('tipo_tramite_id', $tipoTramite->id)->exists()) {
@@ -115,7 +115,7 @@ class TipoTramiteController extends Controller
 
     public function toggle(TipoTramite $tipoTramite)
     {
-        Gate::authorize('admin');
+        Gate::authorize('tipos_tramites.gestionar');
 
         $tipoTramite->activo = ! $tipoTramite->activo;
         $tipoTramite->save();

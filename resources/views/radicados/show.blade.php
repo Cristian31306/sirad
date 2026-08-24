@@ -82,10 +82,6 @@
                                     <input type="date" name="fecha_radicacion" value="{{ Carbon\Carbon::parse($radicado->fecha_radicacion)->format('Y-m-d') }}" class="w-full border-gray-300 rounded-xl" required>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Hora de Recepción</label>
-                                    <input type="time" name="hora_recepcion" value="{{ $radicado->hora_recepcion ? Carbon\Carbon::parse($radicado->hora_recepcion)->format('H:i') : '' }}" class="w-full border-gray-300 rounded-xl" required>
-                                </div>
-                                <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-1">Remitente</label>
                                     <input type="text" name="remitente" value="{{ $radicado->remitente }}" class="w-full border-gray-300 rounded-xl" required>
                                 </div>
@@ -199,7 +195,9 @@
                             </div>
                             
                             <div class="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse">
-                                <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Enviar Solicitud</button>
+                                <button type="submit" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                                    {{ auth()->user()->can('radicados.editar') ? 'Guardar Cambios' : 'Enviar Solicitud' }}
+                                </button>
                                 <button type="button" @click="showEditModal = false" class="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">Cancelar</button>
                             </div>
                         </form>
@@ -303,7 +301,6 @@
                     <div>
                         <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Fecha Radicación</span>
                         <p class="font-medium text-gray-900">{{ $radicado->fecha_radicacion->format('d/m/Y') }}</p>
-                        <p class="text-xs text-gray-500">{{ $radicado->hora_recepcion ? \Carbon\Carbon::parse($radicado->hora_recepcion)->format('H:i') : '' }}</p>
                     </div>
                     <div>
                         <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Fecha Límite</span>
@@ -326,6 +323,80 @@
                         @endif
                     </div>
                 @endif
+            </div>
+        </div>
+
+        <!-- Documentos y Anexos -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 class="font-bold text-gray-800 text-lg border-b border-gray-100 pb-3 mb-4 flex items-center justify-between">
+                <span class="flex items-center gap-2">
+                    <i class="ph ph-paperclip text-blue-600 text-xl"></i>
+                    Documentos y Anexos
+                </span>
+            </h3>
+
+            <div class="space-y-4">
+                <!-- Documento Inicial (Entrada) -->
+                <div class="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
+                    <div class="flex items-center justify-between flex-wrap gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
+                                <i class="ph ph-file-text"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Documento de Entrada</span>
+                                @if($radicado->hasArchivoEntrada())
+                                    <p class="font-medium text-gray-900 text-sm break-all">{{ $radicado->archivo_entrada_nombre }}</p>
+                                @else
+                                    <p class="text-xs text-gray-500 italic">No se adjuntó archivo al momento de radicar</p>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if($radicado->hasArchivoEntrada())
+                            <div class="flex items-center gap-2">
+                                <a href="{{ route('radicados.archivo.ver', [$radicado, 'entrada']) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-blue-600 shadow-sm transition">
+                                    <i class="ph ph-eye"></i> Visualizar
+                                </a>
+                                <a href="{{ route('radicados.archivo.descargar', [$radicado, 'entrada']) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition">
+                                    <i class="ph ph-download-simple"></i> Descargar
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Documento de Respuesta (Salida) -->
+                <div class="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
+                    <div class="flex items-center justify-between flex-wrap gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center text-xl">
+                                <i class="ph ph-file-arrow-up"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Documento de Respuesta / Salida</span>
+                                @if($radicado->hasArchivoSalida())
+                                    <p class="font-medium text-gray-900 text-sm break-all">{{ $radicado->archivo_salida_nombre }}</p>
+                                @elseif($radicado->estado === 'completado')
+                                    <p class="text-xs text-gray-500 italic">Trámite completado sin archivo adjunto</p>
+                                @else
+                                    <p class="text-xs text-gray-500 italic">Pendiente de cierre y respuesta</p>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if($radicado->hasArchivoSalida())
+                            <div class="flex items-center gap-2">
+                                <a href="{{ route('radicados.archivo.ver', [$radicado, 'salida']) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-green-600 shadow-sm transition">
+                                    <i class="ph ph-eye"></i> Visualizar
+                                </a>
+                                <a href="{{ route('radicados.archivo.descargar', [$radicado, 'salida']) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 shadow-sm transition">
+                                    <i class="ph ph-download-simple"></i> Descargar
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -395,12 +466,19 @@
             <div>
                 @if(in_array($radicado->estado, ['pendiente', 'alerta', 'vencido']))
                     @can('radicados.completar')
-                        <div class="bg-blue-50/50 border border-dashed border-blue-300 rounded-xl p-6 text-center">
-                            <p class="text-sm font-medium text-blue-800 mb-4">El trámite se encuentra abierto y pendiente de gestión.</p>
+                        <div class="bg-blue-50/50 border border-dashed border-blue-300 rounded-xl p-5 text-center">
+                            <p class="text-sm font-medium text-blue-800 mb-3">El trámite se encuentra abierto y pendiente de gestión.</p>
                             
-                            <form action="{{ route('radicados.cierre', $radicado) }}" method="POST">
+                            <form action="{{ route('radicados.cierre', $radicado) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PATCH')
+
+                                <div class="mb-4 text-left">
+                                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Adjuntar Respuesta / Oficio de Cierre (Opcional)</label>
+                                    <input type="file" name="archivo_salida" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer border border-gray-200 rounded-xl bg-white p-1">
+                                    <p class="text-[10px] text-gray-400 mt-1">PDF, DOCX, ZIP, imágenes hasta 10 MB</p>
+                                </div>
+
                                 <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-xl shadow-md hover:bg-blue-700 flex items-center justify-center gap-2 transition">
                                     <i class="ph ph-check-circle text-lg"></i> Marcar como Completado
                                 </button>
@@ -416,6 +494,13 @@
                         <i class="ph-fill ph-check-circle text-4xl text-green-500 mb-2"></i>
                         <p class="text-sm font-bold text-green-800">Trámite Completado</p>
                         <p class="text-xs text-green-600 mt-1">Cerrado el {{ optional($radicado->fecha_salida)->format('d/m/Y') }}</p>
+                        @if($radicado->hasArchivoSalida())
+                            <div class="mt-3 pt-3 border-t border-green-100">
+                                <a href="{{ route('radicados.archivo.descargar', [$radicado, 'salida']) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-green-700 hover:text-green-900 underline">
+                                    <i class="ph ph-file-arrow-down"></i> Descargar {{ $radicado->archivo_salida_nombre }}
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 @endif
             </div>

@@ -216,10 +216,16 @@
                 <tbody class="divide-y divide-gray-50 text-sm text-gray-700">
                     @forelse($radicados as $radicado)
                         <tr class="hover:bg-blue-50/30 transition">
-                            <td class="px-6 py-4 font-bold text-gray-900">{{ $radicado->numero_radicado }}</td>
+                            <td class="px-6 py-4 font-bold text-gray-900">
+                                <div class="flex items-center gap-1.5">
+                                    <span>{{ $radicado->numero_radicado }}</span>
+                                    @if($radicado->hasArchivoEntrada() || $radicado->hasArchivoSalida())
+                                        <i class="ph-bold ph-paperclip text-blue-600 text-sm" title="Contiene documento adjunto"></i>
+                                    @endif
+                                </div>
+                            </td>
                             <td class="px-6 py-4 text-gray-500">
-                                {{ $radicado->fecha_radicacion->format('d/m/Y') }}<br>
-                                <span class="text-xs">{{ $radicado->hora_recepcion ? \Carbon\Carbon::parse($radicado->hora_recepcion)->format('H:i') : '' }}</span>
+                                {{ $radicado->fecha_radicacion->format('d/m/Y') }}
                             </td>
                             <td class="px-6 py-4">
                                 {{ Str::limit($radicado->remitente, 25) }}<br>

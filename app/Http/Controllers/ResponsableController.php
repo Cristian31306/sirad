@@ -11,7 +11,7 @@ class ResponsableController extends Controller
 {
     public function index(Request $request)
     {
-        Gate::authorize('admin');
+        Gate::authorize('responsables.gestionar');
 
         $query = Responsable::query();
 
@@ -36,7 +36,7 @@ class ResponsableController extends Controller
 
     public function create()
     {
-        Gate::authorize('admin');
+        Gate::authorize('responsables.gestionar');
         $especialidades = Responsable::whereNotNull('especialidad')->distinct()->pluck('especialidad');
 
         return view('responsables.create', compact('especialidades'));
@@ -44,7 +44,7 @@ class ResponsableController extends Controller
 
     public function store(Request $request)
     {
-        Gate::authorize('admin');
+        Gate::authorize('responsables.gestionar');
         $request->validate([
             'nombre' => 'required|string|max:255',
             'correo' => 'required|email|unique:responsables,correo',
@@ -66,7 +66,7 @@ class ResponsableController extends Controller
 
     public function edit(Responsable $responsable)
     {
-        Gate::authorize('admin');
+        Gate::authorize('responsables.gestionar');
         $especialidades = Responsable::whereNotNull('especialidad')->distinct()->pluck('especialidad');
 
         return view('responsables.edit', compact('responsable', 'especialidades'));
@@ -74,7 +74,7 @@ class ResponsableController extends Controller
 
     public function update(Request $request, Responsable $responsable)
     {
-        Gate::authorize('admin');
+        Gate::authorize('responsables.gestionar');
         $request->validate([
             'nombre' => 'required|string|max:255',
             'correo' => 'required|email|unique:responsables,correo,'.$responsable->id,
@@ -96,7 +96,7 @@ class ResponsableController extends Controller
 
     public function destroy(Responsable $responsable)
     {
-        Gate::authorize('admin');
+        Gate::authorize('responsables.gestionar');
 
         $responsableArray = $responsable->toArray();
         $responsableId = $responsable->id;

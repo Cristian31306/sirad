@@ -25,6 +25,8 @@ Route::middleware(['auth', 'verified', 'force_password'])->group(function () {
     Route::resource('radicados', RadicadoController::class);
     Route::patch('radicados/{radicado}/anular', [RadicadoController::class, 'anular'])->name('radicados.anular');
     Route::patch('radicados/{radicado}/cierre', [RadicadoController::class, 'updateCierre'])->name('radicados.cierre');
+    Route::get('radicados/{radicado}/archivo/{tipo}/descargar', [RadicadoController::class, 'downloadArchivo'])->name('radicados.archivo.descargar');
+    Route::get('radicados/{radicado}/archivo/{tipo}/ver', [RadicadoController::class, 'verArchivo'])->name('radicados.archivo.ver');
 
     Route::resource('responsables', ResponsableController::class)->except(['show'])->middleware('can:responsables.gestionar');
 

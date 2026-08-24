@@ -21,7 +21,7 @@ class CheckVencimientos extends Command
      */
     public function handle(DiasHabilesService $service)
     {
-        $pendientes = Radicado::whereIn('estado', ['pendiente', 'alerta'])->get();
+        $pendientes = Radicado::with('responsables', 'tipoTramite')->whereIn('estado', ['pendiente', 'alerta'])->get();
         $hoy = Carbon::now();
 
         foreach ($pendientes as $radicado) {
@@ -35,13 +35,15 @@ class CheckVencimientos extends Command
                 if ($radicado->estado !== 'vencido') {
                     $radicado->update(['estado' => 'vencido']);
 
-                    if ($radicado->responsable && $radicado->responsable->correo) {
-                        try {
-                            Mail::to($radicado->responsable->correo)
-                                ->cc($todos)
-                                ->queue(new AlertaVencimientoMail($radicado));
-                        } catch (\Exception $e) {
-                            \Log::error('Mail Error Vencido: '.$e->getMessage());
+                    foreach ($radicado->responsables as $responsable) {
+                        if ($responsable->correo) {
+                            try {
+                                Mail::to($responsable->correo)
+                                    ->cc($todos)
+                                    ->queue(new AlertaVencimientoMail($radicado));
+                            } catch (\Exception $e) {
+                                \Log::error('Mail Error Vencido: '.$e->getMessage());
+                            }
                         }
                     }
                 }
@@ -64,13 +66,15 @@ class CheckVencimientos extends Command
                 $radicado->update(['estado' => 'alerta']);
 
                 // Correos
-                if ($radicado->responsable && $radicado->responsable->correo) {
-                    try {
-                        Mail::to($radicado->responsable->correo)
-                            ->cc($usuarios)
-                            ->queue(new AlertaVencimientoMail($radicado));
-                    } catch (\Exception $e) {
-                        \Log::error('Mail Error Alerta: '.$e->getMessage());
+                foreach ($radicado->responsables as $responsable) {
+                    if ($responsable->correo) {
+                        try {
+                            Mail::to($responsable->correo)
+                                ->cc($usuarios)
+                                ->queue(new AlertaVencimientoMail($radicado));
+                        } catch (\Exception $e) {
+                            \Log::error('Mail Error Alerta: '.$e->getMessage());
+                        }
                     }
                 }
             }

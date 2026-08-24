@@ -98,13 +98,13 @@ class RadicadoController extends Controller
             foreach ($radicados as $r) {
                 fputcsv($file, [
                     $r->numero_radicado,
-                    $r->fecha_radicacion,
+                    $r->fecha_radicacion ? \Carbon\Carbon::parse($r->fecha_radicacion)->format('Y-m-d') : '',
                     $r->remitente,
                     $r->asunto,
                     $r->medio,
                     $r->responsables->pluck('nombre')->implode(', ') ?: 'N/A',
                     strtoupper($r->estado),
-                    $r->fecha_limite,
+                    $r->fecha_limite ? \Carbon\Carbon::parse($r->fecha_limite)->format('Y-m-d') : '',
                 ], ';');
             }
 
@@ -127,7 +127,6 @@ class RadicadoController extends Controller
         $request->validate([
             'numero_radicado' => 'required|string|max:255|unique:radicados,numero_radicado',
             'fecha_radicacion' => 'required|date|before_or_equal:today',
-            'hora_recepcion' => 'required|date_format:H:i',
             'remitente' => 'required|string|max:255',
             'empresa' => 'nullable|string|max:255',
             'tipo_tramite_id' => 'required|exists:tipo_tramites,id',
@@ -137,6 +136,7 @@ class RadicadoController extends Controller
             'observaciones' => 'nullable|string',
             'responsables' => 'required|array|min:1',
             'responsables.*' => 'exists:responsables,id',
+            'archivo_entrada' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,zip,jpg,jpeg,png',
         ]);
 
         $tipoTramite = TipoTramite::findOrFail($request->tipo_tramite_id);
@@ -144,10 +144,17 @@ class RadicadoController extends Controller
         $fechaRadicacion = Carbon::parse($request->fecha_radicacion);
         $fechaLimite = $this->diasHabilesService->calcularFechaLimite($fechaRadicacion, $tipoTramite->dias_habiles);
 
+        $archivoEntradaPath = null;
+        $archivoEntradaNombre = null;
+
+        if ($request->hasFile('archivo_entrada') && $request->file('archivo_entrada')->isValid()) {
+            $archivoEntradaPath = $request->file('archivo_entrada')->store('radicados/entradas', 'public');
+            $archivoEntradaNombre = $request->file('archivo_entrada')->getClientOriginalName();
+        }
+
         $radicado = Radicado::create([
             'numero_radicado' => $request->numero_radicado,
             'fecha_radicacion' => $fechaRadicacion->toDateString(),
-            'hora_recepcion' => $request->hora_recepcion,
             'remitente' => $request->remitente,
             'empresa' => $request->empresa,
             'asunto' => $request->asunto,
@@ -155,6 +162,8 @@ class RadicadoController extends Controller
             'medio' => $request->medio,
             'prioridad' => $request->prioridad,
             'observaciones' => $request->observaciones,
+            'archivo_entrada_path' => $archivoEntradaPath,
+            'archivo_entrada_nombre' => $archivoEntradaNombre,
             'fecha_limite' => $fechaLimite->toDateString(),
             'estado' => 'pendiente',
         ]);
@@ -172,7 +181,7 @@ class RadicadoController extends Controller
         if ($radicado->responsables->isNotEmpty()) {
             foreach ($radicado->responsables as $resp) {
                 try {
-                    Mail::to($resp->correo)->queue(new NuevaRadicacionMail($radicado));
+                    Mail::to($resp->correo)->queue(new NuevaRadicacionMail($radicado, $resp));
                 } catch (\Exception $e) {
                     \Log::error('Mail Error: '.$e->getMessage());
                 }
@@ -191,7 +200,6 @@ class RadicadoController extends Controller
         $request->validate([
             'numero_radicado' => 'required|string|max:255|unique:radicados,numero_radicado,'.$radicado->id,
             'fecha_radicacion' => 'required|date',
-            'hora_recepcion' => 'required|date_format:H:i',
             'remitente' => 'required|string|max:255',
             'empresa' => 'nullable|string|max:255',
             'tipo_tramite_id' => 'required|exists:tipo_tramites,id',
@@ -209,7 +217,6 @@ class RadicadoController extends Controller
         $radicado->update([
             'numero_radicado' => $request->numero_radicado,
             'fecha_radicacion' => Carbon::parse($request->fecha_radicacion)->toDateString(),
-            'hora_recepcion' => $request->hora_recepcion,
             'remitente' => $request->remitente,
             'empresa' => $request->empresa,
             'tipo_tramite_id' => $request->tipo_tramite_id,
@@ -227,7 +234,7 @@ class RadicadoController extends Controller
             'accion' => 'Editó un radicado',
             'modelo' => 'Radicado',
             'modelo_id' => $radicado->id,
-            'detalles' => $request->only(['numero_radicado', 'fecha_radicacion', 'hora_recepcion', 'remitente', 'empresa', 'tipo_tramite_id', 'medio', 'prioridad', 'asunto', 'observaciones', 'responsables']),
+            'detalles' => $request->only(['numero_radicado', 'fecha_radicacion', 'remitente', 'empresa', 'tipo_tramite_id', 'medio', 'prioridad', 'asunto', 'observaciones', 'responsables']),
         ]);
 
         return redirect()->route('radicados.show', $radicado)->with('success', 'Radicado actualizado correctamente.');
@@ -242,7 +249,7 @@ class RadicadoController extends Controller
 
     public function show(Radicado $radicado)
     {
-        $radicado->load('responsable', 'anulador', 'tipoTramite');
+        $radicado->load('responsables', 'anulador', 'tipoTramite');
         $tiposTramites = TipoTramite::where('activo', true)->get();
         $responsables = Responsable::all();
 
@@ -253,20 +260,65 @@ class RadicadoController extends Controller
     {
         Gate::authorize('radicados.completar');
 
-        $radicado->update([
+        $request->validate([
+            'archivo_salida' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,zip,jpg,jpeg,png',
+        ]);
+
+        $updateData = [
             'fecha_salida' => Carbon::now()->toDateString(),
             'estado' => 'completado',
-        ]);
+        ];
+
+        if ($request->hasFile('archivo_salida') && $request->file('archivo_salida')->isValid()) {
+            $updateData['archivo_salida_path'] = $request->file('archivo_salida')->store('radicados/salidas', 'public');
+            $updateData['archivo_salida_nombre'] = $request->file('archivo_salida')->getClientOriginalName();
+        }
+
+        $radicado->update($updateData);
 
         Auditoria::create([
             'user_id' => Auth::id(),
             'accion' => 'Completó un radicado',
             'modelo' => 'Radicado',
             'modelo_id' => $radicado->id,
-            'detalles' => ['fecha_salida' => Carbon::now()->toDateString()],
+            'detalles' => [
+                'fecha_salida' => Carbon::now()->toDateString(),
+                'archivo_salida' => $radicado->archivo_salida_nombre,
+            ],
         ]);
 
         return redirect()->route('radicados.show', $radicado)->with('success', 'Trámite cerrado correctamente.');
+    }
+
+    public function downloadArchivo(Radicado $radicado, string $tipo)
+    {
+        $path = $tipo === 'salida' ? $radicado->archivo_salida_path : $radicado->archivo_entrada_path;
+        $nombre = $tipo === 'salida' ? $radicado->archivo_salida_nombre : $radicado->archivo_entrada_nombre;
+
+        if (! $path || ! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            abort(404, 'El archivo solicitado no existe.');
+        }
+
+        $nombreDescarga = $nombre ?: basename($path);
+
+        return \Illuminate\Support\Facades\Storage::disk('public')->download($path, $nombreDescarga);
+    }
+
+    public function verArchivo(Radicado $radicado, string $tipo)
+    {
+        $path = $tipo === 'salida' ? $radicado->archivo_salida_path : $radicado->archivo_entrada_path;
+
+        if (! $path || ! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            abort(404, 'El archivo solicitado no existe.');
+        }
+
+        $fullPath = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
+        $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="'.basename($path).'"',
+        ]);
     }
 
     public function anular(Request $request, Radicado $radicado)

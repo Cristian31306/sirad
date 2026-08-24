@@ -38,10 +38,21 @@ class SyncFestivosCommand extends Command
             $count = 0;
 
             foreach ($festivos as $festivo) {
-                Festivo::updateOrCreate(
-                    ['fecha' => $festivo['date']],
-                    ['descripcion' => $festivo['localName']]
-                );
+                $fecha = \Carbon\Carbon::parse($festivo['date'])->format('Y-m-d');
+                $existente = Festivo::whereDate('fecha', $fecha)->first();
+
+                if ($existente) {
+                    if (! str_contains($existente->descripcion, $festivo['localName'])) {
+                        $existente->update([
+                            'descripcion' => $existente->descripcion.' / '.$festivo['localName'],
+                        ]);
+                    }
+                } else {
+                    Festivo::create([
+                        'fecha' => $fecha,
+                        'descripcion' => $festivo['localName'],
+                    ]);
+                }
                 $count++;
             }
 
