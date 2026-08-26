@@ -40,7 +40,7 @@ class CheckVencimientos extends Command
                             try {
                                 Mail::to($responsable->correo)
                                     ->cc($todos)
-                                    ->queue(new AlertaVencimientoMail($radicado));
+                                    ->queue(new AlertaVencimientoMail($radicado, $responsable));
                             } catch (\Exception $e) {
                                 \Log::error('Mail Error Vencido: '.$e->getMessage());
                             }
@@ -71,7 +71,7 @@ class CheckVencimientos extends Command
                         try {
                             Mail::to($responsable->correo)
                                 ->cc($usuarios)
-                                ->queue(new AlertaVencimientoMail($radicado));
+                                ->queue(new AlertaVencimientoMail($radicado, $responsable));
                         } catch (\Exception $e) {
                             \Log::error('Mail Error Alerta: '.$e->getMessage());
                         }

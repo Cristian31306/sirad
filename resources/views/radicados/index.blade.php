@@ -8,7 +8,7 @@
         </div>
     </x-slot>
 
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
 
         @php
             $estadoLabels = [
@@ -20,17 +20,26 @@
             ];
 
             // Filtros del panel avanzado (todo menos el buscador, que ya está siempre visible)
-            $panelKeys = ['estado', 'prioridad', 'fecha_inicio', 'fecha_fin'];
+            $panelKeys = ['estado', 'prioridad', 'fecha_inicio', 'fecha_fin', 'tipo_tramite_id', 'responsable_id'];
             $panelFilterCount = collect($panelKeys)->filter(fn ($k) => request($k))->count();
 
-            // Chips de todos los filtros activos (incluyendo búsqueda) para poder quitarlos uno a uno
-            $activeFilters = collect([
-                'search'       => request('search') ? 'Buscar: "' . request('search') . '"' : null,
-                'estado'       => request('estado') ? 'Estado: ' . ($estadoLabels[request('estado')] ?? request('estado')) : null,
-                'prioridad'    => request('prioridad') ? 'Prioridad: ' . request('prioridad') : null,
-                'fecha_inicio' => request('fecha_inicio') ? 'Desde: ' . \Carbon\Carbon::parse(request('fecha_inicio'))->format('d/m/Y') : null,
-                'fecha_fin'    => request('fecha_fin') ? 'Hasta: ' . \Carbon\Carbon::parse(request('fecha_fin'))->format('d/m/Y') : null,
-            ])->filter();
+            $activeFilters = collect([]);
+            if (request('search')) $activeFilters->push(['key' => 'search', 'val' => request('search'), 'label' => 'Buscar: "' . request('search') . '"']);
+            if (request('fecha_inicio')) $activeFilters->push(['key' => 'fecha_inicio', 'val' => request('fecha_inicio'), 'label' => 'Desde: ' . \Carbon\Carbon::parse(request('fecha_inicio'))->format('d/m/Y')]);
+            if (request('fecha_fin')) $activeFilters->push(['key' => 'fecha_fin', 'val' => request('fecha_fin'), 'label' => 'Hasta: ' . \Carbon\Carbon::parse(request('fecha_fin'))->format('d/m/Y')]);
+
+            foreach((array)request('estado', []) as $e) {
+                if($e) $activeFilters->push(['key' => 'estado', 'val' => $e, 'label' => 'Estado: ' . ($estadoLabels[$e] ?? $e)]);
+            }
+            foreach((array)request('prioridad', []) as $p) {
+                if($p) $activeFilters->push(['key' => 'prioridad', 'val' => $p, 'label' => 'Prioridad: ' . $p]);
+            }
+            foreach((array)request('tipo_tramite_id', []) as $t) {
+                if($t) $activeFilters->push(['key' => 'tipo_tramite_id', 'val' => $t, 'label' => 'Tipo: ' . $tiposTramites->firstWhere('id', $t)?->nombre]);
+            }
+            foreach((array)request('responsable_id', []) as $r) {
+                if($r) $activeFilters->push(['key' => 'responsable_id', 'val' => $r, 'label' => 'Resp: ' . $responsables->firstWhere('id', $r)?->nombre]);
+            }
         @endphp
 
         <!-- Toolbar -->
@@ -67,32 +76,52 @@
                             @endif
                         </summary>
 
-                        <div class="absolute right-0 mt-2 w-[320px] sm:w-[340px] bg-white border border-gray-100 shadow-xl rounded-2xl p-4 z-20 space-y-4">
+                        <div class="absolute right-0 mt-2 w-[320px] sm:w-[340px] bg-white border border-gray-100 shadow-xl rounded-2xl p-4 z-20 space-y-4 max-h-[80vh] overflow-y-auto">
                             <div>
-                                <label for="estado" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Estado</label>
-                                <div class="relative">
-                                    <select id="estado" name="estado" data-autosubmit
-                                            class="appearance-none w-full border border-gray-200 rounded-xl text-sm bg-white py-2 pl-3 pr-8 focus:border-blue-500 focus:ring-blue-500">
-                                        <option value="">Todos</option>
-                                        @foreach($estadoLabels as $value => $label)
-                                            <option value="{{ $value }}" {{ request('estado') == $value ? 'selected' : '' }}>{{ $label }}</option>
-                                        @endforeach
-                                    </select>
-                                    <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Estado</label>
+                                <div class="border border-gray-200 rounded-xl overflow-hidden max-h-32 overflow-y-auto bg-white shadow-inner">
+                                    @foreach($estadoLabels as $value => $label)
+                                        <label class="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition">
+                                            <input type="checkbox" name="estado[]" value="{{ $value }}" class="rounded text-blue-600 focus:ring-blue-500 bg-gray-50 border-gray-300" {{ in_array($value, (array)request('estado', [])) ? 'checked' : '' }} data-autosubmit>
+                                            <span class="ml-2 text-sm text-gray-700">{{ $label }}</span>
+                                        </label>
+                                    @endforeach
                                 </div>
                             </div>
 
                             <div>
-                                <label for="prioridad" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Prioridad</label>
-                                <div class="relative">
-                                    <select id="prioridad" name="prioridad" data-autosubmit
-                                            class="appearance-none w-full border border-gray-200 rounded-xl text-sm bg-white py-2 pl-3 pr-8 focus:border-blue-500 focus:ring-blue-500">
-                                        <option value="">Todas</option>
-                                        <option value="Alta" {{ request('prioridad') == 'Alta' ? 'selected' : '' }}>Alta</option>
-                                        <option value="Media" {{ request('prioridad') == 'Media' ? 'selected' : '' }}>Media</option>
-                                        <option value="Baja" {{ request('prioridad') == 'Baja' ? 'selected' : '' }}>Baja</option>
-                                    </select>
-                                    <i class="ph ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none text-xs"></i>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Prioridad</label>
+                                <div class="border border-gray-200 rounded-xl overflow-hidden max-h-32 overflow-y-auto bg-white shadow-inner">
+                                    @foreach(['Alta', 'Media', 'Baja'] as $p)
+                                        <label class="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition">
+                                            <input type="checkbox" name="prioridad[]" value="{{ $p }}" class="rounded text-blue-600 focus:ring-blue-500 bg-gray-50 border-gray-300" {{ in_array($p, (array)request('prioridad', [])) ? 'checked' : '' }} data-autosubmit>
+                                            <span class="ml-2 text-sm text-gray-700">{{ $p }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Tipo de Trámite</label>
+                                <div class="border border-gray-200 rounded-xl overflow-hidden max-h-32 overflow-y-auto bg-white shadow-inner">
+                                    @foreach($tiposTramites as $tipo)
+                                        <label class="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition">
+                                            <input type="checkbox" name="tipo_tramite_id[]" value="{{ $tipo->id }}" class="rounded text-blue-600 focus:ring-blue-500 bg-gray-50 border-gray-300" {{ in_array($tipo->id, (array)request('tipo_tramite_id', [])) ? 'checked' : '' }} data-autosubmit>
+                                            <span class="ml-2 text-sm text-gray-700">{{ $tipo->nombre }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Responsable</label>
+                                <div class="border border-gray-200 rounded-xl overflow-hidden max-h-32 overflow-y-auto bg-white shadow-inner">
+                                    @foreach($responsables as $resp)
+                                        <label class="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition">
+                                            <input type="checkbox" name="responsable_id[]" value="{{ $resp->id }}" class="rounded text-blue-600 focus:ring-blue-500 bg-gray-50 border-gray-300" {{ in_array($resp->id, (array)request('responsable_id', [])) ? 'checked' : '' }} data-autosubmit>
+                                            <span class="ml-2 text-sm text-gray-700">{{ $resp->nombre }}</span>
+                                        </label>
+                                    @endforeach
                                 </div>
                             </div>
 
@@ -140,10 +169,18 @@
             <!-- Chips de filtros activos -->
             @if($activeFilters->isNotEmpty())
                 <div class="px-4 pb-3 flex flex-wrap items-center gap-1.5">
-                    @foreach($activeFilters as $key => $label)
-                        <a href="{{ route('radicados.index', request()->except($key)) }}"
+                    @foreach($activeFilters as $filter)
+                        @php
+                            $excepts = request()->all();
+                            if(isset($excepts[$filter['key']]) && is_array($excepts[$filter['key']])) {
+                                $excepts[$filter['key']] = array_diff($excepts[$filter['key']], [$filter['val']]);
+                            } else {
+                                unset($excepts[$filter['key']]);
+                            }
+                        @endphp
+                        <a href="{{ route('radicados.index', $excepts) }}"
                            class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-medium pl-2.5 pr-1.5 py-1 rounded-full border border-blue-100 hover:bg-blue-100 transition-colors">
-                            {{ $label }}
+                            {{ $filter['label'] }}
                             <i class="ph ph-x text-xs"></i>
                         </a>
                     @endforeach
@@ -285,7 +322,13 @@
             </div>
             <form method="GET" action="{{ route('radicados.index') }}" id="perPageForm" class="flex items-center gap-2 text-sm text-gray-500">
                 @foreach(request()->except('per_page') as $key => $value)
-                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @if(is_array($value))
+                        @foreach($value as $v)
+                            <input type="hidden" name="{{ $key }}[]" value="{{ $v }}">
+                        @endforeach
+                    @else
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endif
                 @endforeach
                 <label for="per_page">Mostrar</label>
                 <select id="per_page" name="per_page" onchange="document.getElementById('perPageForm').submit()"

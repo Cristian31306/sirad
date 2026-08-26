@@ -21,6 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \App\Models\Radicado::observe(\App\Observers\RadicadoObserver::class);
+
         Gate::define('admin', function ($user) {
             return $user->isAdmin();
         });

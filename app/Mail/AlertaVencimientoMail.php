@@ -16,18 +16,14 @@ class AlertaVencimientoMail extends Mailable implements ShouldQueue
     use Queueable, SerializesModels;
 
     public $radicado;
+    public $responsable;
 
-    /**
-     * Create a new message instance.
-     */
-    public function __construct(Radicado $radicado)
+    public function __construct(Radicado $radicado, $responsable = null)
     {
         $this->radicado = $radicado;
+        $this->responsable = $responsable;
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -35,9 +31,6 @@ class AlertaVencimientoMail extends Mailable implements ShouldQueue
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
@@ -45,13 +38,18 @@ class AlertaVencimientoMail extends Mailable implements ShouldQueue
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, Attachment>
-     */
     public function attachments(): array
     {
-        return [];
+        $attachments = [];
+
+        if ($this->radicado->hasArchivoEntrada()) {
+            $path = storage_path('app/public/' . $this->radicado->archivo_entrada_path);
+            if (file_exists($path)) {
+                $attachments[] = Attachment::fromPath($path)
+                    ->as($this->radicado->archivo_entrada_nombre);
+            }
+        }
+
+        return $attachments;
     }
 }

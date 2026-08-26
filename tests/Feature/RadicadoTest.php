@@ -66,7 +66,7 @@ class RadicadoTest extends TestCase
     public function test_can_create_new_radicado_with_attachment(): void
     {
         Mail::fake();
-        $storage = Storage::fake('public');
+        $storage = Storage::fake('local');
 
         $archivo = UploadedFile::fake()->create('solicitud_comunidad.pdf', 2048, 'application/pdf');
 
@@ -162,7 +162,7 @@ class RadicadoTest extends TestCase
 
     public function test_can_complete_and_close_radicado_with_response_file(): void
     {
-        $storage = Storage::fake('public');
+        $storage = Storage::fake('local');
         $archivoRespuesta = UploadedFile::fake()->create('oficio_respuesta.pdf', 1024, 'application/pdf');
 
         $radicado = Radicado::create([
@@ -191,7 +191,7 @@ class RadicadoTest extends TestCase
 
     public function test_can_download_and_preview_attachments(): void
     {
-        $storage = Storage::fake('public');
+        $storage = Storage::fake('local');
         $path = 'radicados/entradas/test_doc.pdf';
         $storage->put($path, 'dummy content');
 

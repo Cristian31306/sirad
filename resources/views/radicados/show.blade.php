@@ -473,11 +473,33 @@
                                 @csrf
                                 @method('PATCH')
 
-                                <div class="mb-4 text-left">
-                                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Adjuntar Respuesta / Oficio de Cierre (Opcional)</label>
-                                    <input type="file" name="archivo_salida" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer border border-gray-200 rounded-xl bg-white p-1">
-                                    <p class="text-[10px] text-gray-400 mt-1">PDF, DOCX, ZIP, imágenes hasta 10 MB</p>
-                                </div>
+                                @if($radicado->hasArchivoSalida())
+                                    <div class="mb-4 bg-green-100 border border-green-200 rounded-xl p-3 text-left">
+                                        <div class="flex items-start gap-2">
+                                            <i class="ph-fill ph-check-circle text-green-600 mt-0.5"></i>
+                                            <div>
+                                                <p class="text-xs font-bold text-green-800 uppercase tracking-wider mb-1">¡Respuesta recibida!</p>
+                                                <p class="text-sm text-green-700 leading-tight mb-2">El responsable ya subió el documento de respuesta:</p>
+                                                <a href="{{ route('radicados.archivo.descargar', [$radicado, 'salida']) }}" class="inline-flex items-center gap-1 text-sm font-bold text-blue-700 hover:text-blue-900 underline bg-white/50 px-2 py-1 rounded-md">
+                                                    <i class="ph ph-file-arrow-down"></i> {{ $radicado->archivo_salida_nombre }}
+                                                </a>
+                                                <p class="text-xs text-green-600 mt-2 italic">Si cierras el trámite ahora, este documento se guardará como la respuesta final.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-4 text-left border-t border-blue-200 pt-3">
+                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Reemplazar Documento (Opcional)</label>
+                                        <input type="file" name="archivo_salida" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer border border-gray-200 rounded-xl bg-white p-1">
+                                        <p class="text-[10px] text-gray-500 mt-1">Sube un archivo solo si deseas <strong>reemplazar</strong> el que subió el responsable.</p>
+                                    </div>
+                                @else
+                                    <div class="mb-4 text-left">
+                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Adjuntar Respuesta / Oficio de Cierre (Opcional)</label>
+                                        <input type="file" name="archivo_salida" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer border border-gray-200 rounded-xl bg-white p-1">
+                                        <p class="text-[10px] text-gray-400 mt-1">PDF, DOCX, ZIP, imágenes hasta 10 MB</p>
+                                    </div>
+                                @endif
 
                                 <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-xl shadow-md hover:bg-blue-700 flex items-center justify-center gap-2 transition">
                                     <i class="ph ph-check-circle text-lg"></i> Marcar como Completado

@@ -139,7 +139,7 @@ class SystemE2ETest extends TestCase
     // ==========================================
     public function test_radicado_lifecycle_create_attachment_view_update_cierre_anular(): void
     {
-        $storage = Storage::fake('public');
+        $storage = Storage::fake('local');
         Mail::fake();
 
         // 3.1 Creación con archivo de entrada
@@ -331,7 +331,7 @@ class SystemE2ETest extends TestCase
         // 5.3 Eliminar
         $deleteResponse = $this->actingAs($this->secretaria)->delete(route('responsables.destroy', $nuevoResp));
         $deleteResponse->assertRedirect(route('responsables.index'));
-        $this->assertDatabaseMissing('responsables', ['id' => $nuevoResp->id]);
+        $this->assertSoftDeleted('responsables', ['id' => $nuevoResp->id]);
     }
 
     // ==========================================

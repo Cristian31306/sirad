@@ -76,6 +76,13 @@
                         </tr>
                     </table>
                 </div>
+
+                @if(isset($responsable) && $responsable)
+                <div class="action">
+                    <a href="{{ URL::signedRoute('radicados.public.respuesta', ['radicado' => $radicado->id, 'responsable' => $responsable->id]) }}" style="display: inline-block; background-color: #2563eb; color: #ffffff !important; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">Subir Respuesta</a>
+                    <p style="margin-top: 12px; font-size: 13px; color: #64748b;">A través de este enlace seguro podrá adjuntar su documento de respuesta directamente.</p>
+                </div>
+                @endif
             </div>
             <div class="footer">
                 Este es un mensaje automático, por favor no responda este correo.

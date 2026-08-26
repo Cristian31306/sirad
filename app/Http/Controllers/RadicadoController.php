@@ -37,8 +37,9 @@ class RadicadoController extends Controller
             });
         }
 
-        if ($request->has('estado') && $request->estado != '') {
-            $query->where('estado', $request->estado);
+        if ($request->has('estado') && !empty($request->estado)) {
+            $estados = (array) $request->estado;
+            $query->whereIn('estado', $estados);
         }
 
         if ($request->has('fecha_inicio') && $request->fecha_inicio != '') {
@@ -49,8 +50,21 @@ class RadicadoController extends Controller
             $query->whereDate('fecha_radicacion', '<=', $request->fecha_fin);
         }
 
-        if ($request->has('prioridad') && $request->prioridad != '') {
-            $query->where('prioridad', $request->prioridad);
+        if ($request->has('prioridad') && !empty($request->prioridad)) {
+            $prioridades = (array) $request->prioridad;
+            $query->whereIn('prioridad', $prioridades);
+        }
+
+        if ($request->has('tipo_tramite_id') && !empty($request->tipo_tramite_id)) {
+            $tipos = (array) $request->tipo_tramite_id;
+            $query->whereIn('tipo_tramite_id', $tipos);
+        }
+
+        if ($request->has('responsable_id') && !empty($request->responsable_id)) {
+            $responsables = (array) $request->responsable_id;
+            $query->whereHas('responsables', function ($q) use ($responsables) {
+                $q->whereIn('responsables.id', $responsables);
+            });
         }
 
         return $query;
@@ -68,7 +82,10 @@ class RadicadoController extends Controller
         $perPage = $request->get('per_page', 10);
         $radicados = $query->paginate($perPage)->withQueryString();
 
-        return view('radicados.index', compact('radicados', 'sort', 'direction'));
+        $responsables = \App\Models\Responsable::all();
+        $tiposTramites = \App\Models\TipoTramite::where('activo', true)->get();
+
+        return view('radicados.index', compact('radicados', 'sort', 'direction', 'responsables', 'tiposTramites'));
     }
 
     public function export(Request $request)
@@ -122,23 +139,8 @@ class RadicadoController extends Controller
         return view('radicados.create', compact('responsables', 'tiposTramites'));
     }
 
-    public function store(Request $request)
+    public function store(\App\Http\Requests\StoreRadicadoRequest $request)
     {
-        $request->validate([
-            'numero_radicado' => 'required|string|max:255|unique:radicados,numero_radicado',
-            'fecha_radicacion' => 'required|date|before_or_equal:today',
-            'remitente' => 'required|string|max:255',
-            'empresa' => 'nullable|string|max:255',
-            'tipo_tramite_id' => 'required|exists:tipo_tramites,id',
-            'asunto' => 'required|string',
-            'medio' => 'required|string|max:255',
-            'prioridad' => 'required|in:Alta,Media,Baja',
-            'observaciones' => 'nullable|string',
-            'responsables' => 'required|array|min:1',
-            'responsables.*' => 'exists:responsables,id',
-            'archivo_entrada' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,zip,jpg,jpeg,png',
-        ]);
-
         $tipoTramite = TipoTramite::findOrFail($request->tipo_tramite_id);
 
         $fechaRadicacion = Carbon::parse($request->fecha_radicacion);
@@ -148,94 +150,64 @@ class RadicadoController extends Controller
         $archivoEntradaNombre = null;
 
         if ($request->hasFile('archivo_entrada') && $request->file('archivo_entrada')->isValid()) {
-            $archivoEntradaPath = $request->file('archivo_entrada')->store('radicados/entradas', 'public');
+            $archivoEntradaPath = $request->file('archivo_entrada')->store('radicados/entradas', 'local');
             $archivoEntradaNombre = $request->file('archivo_entrada')->getClientOriginalName();
         }
 
-        $radicado = Radicado::create([
-            'numero_radicado' => $request->numero_radicado,
-            'fecha_radicacion' => $fechaRadicacion->toDateString(),
-            'remitente' => $request->remitente,
-            'empresa' => $request->empresa,
-            'asunto' => $request->asunto,
-            'tipo_tramite_id' => $request->tipo_tramite_id,
-            'medio' => $request->medio,
-            'prioridad' => $request->prioridad,
-            'observaciones' => $request->observaciones,
-            'archivo_entrada_path' => $archivoEntradaPath,
-            'archivo_entrada_nombre' => $archivoEntradaNombre,
-            'fecha_limite' => $fechaLimite->toDateString(),
-            'estado' => 'pendiente',
-        ]);
+        $radicado = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $fechaRadicacion, $fechaLimite, $archivoEntradaPath, $archivoEntradaNombre) {
+            $radicado = Radicado::create([
+                'numero_radicado' => $request->numero_radicado,
+                'fecha_radicacion' => $fechaRadicacion->toDateString(),
+                'remitente' => $request->remitente,
+                'empresa' => $request->empresa,
+                'asunto' => $request->asunto,
+                'tipo_tramite_id' => $request->tipo_tramite_id,
+                'medio' => $request->medio,
+                'prioridad' => $request->prioridad,
+                'observaciones' => $request->observaciones,
+                'archivo_entrada_path' => $archivoEntradaPath,
+                'archivo_entrada_nombre' => $archivoEntradaNombre,
+                'fecha_limite' => $fechaLimite->toDateString(),
+                'estado' => 'pendiente',
+            ]);
 
-        $radicado->responsables()->attach($request->responsables);
+            $radicado->responsables()->attach($request->responsables);
 
-        Auditoria::create([
-            'user_id' => Auth::id(),
-            'accion' => 'Creó un radicado',
-            'modelo' => 'Radicado',
-            'modelo_id' => $radicado->id,
-            'detalles' => array_merge($radicado->toArray(), ['responsables' => $request->responsables]),
-        ]);
-
-        if ($radicado->responsables->isNotEmpty()) {
-            foreach ($radicado->responsables as $resp) {
-                try {
+            if ($radicado->responsables->isNotEmpty()) {
+                foreach ($radicado->responsables as $resp) {
                     Mail::to($resp->correo)->queue(new NuevaRadicacionMail($radicado, $resp));
-                } catch (\Exception $e) {
-                    \Log::error('Mail Error: '.$e->getMessage());
                 }
             }
-        }
+
+            return $radicado;
+        });
 
         $nombresResponsables = $radicado->responsables->pluck('nombre')->implode(', ') ?: 'N/A';
 
         return redirect()->route('radicados.index')->with('success', 'Radicado creado correctamente. Asignado a: '.$nombresResponsables);
     }
 
-    public function update(Request $request, Radicado $radicado)
+    public function update(\App\Http\Requests\UpdateRadicadoRequest $request, Radicado $radicado)
     {
-        Gate::authorize('radicados.editar');
-
-        $request->validate([
-            'numero_radicado' => 'required|string|max:255|unique:radicados,numero_radicado,'.$radicado->id,
-            'fecha_radicacion' => 'required|date',
-            'remitente' => 'required|string|max:255',
-            'empresa' => 'nullable|string|max:255',
-            'tipo_tramite_id' => 'required|exists:tipo_tramites,id',
-            'medio' => 'required|string|max:255',
-            'prioridad' => 'required|in:Alta,Media,Baja',
-            'asunto' => 'required|string',
-            'observaciones' => 'nullable|string',
-            'responsables' => 'required|array|min:1',
-            'responsables.*' => 'exists:responsables,id',
-        ]);
-
         $tipoTramite = TipoTramite::find($request->tipo_tramite_id);
         $fechaLimite = $this->diasHabilesService->calcularFechaLimite(Carbon::parse($request->fecha_radicacion), $tipoTramite->dias_habiles);
 
-        $radicado->update([
-            'numero_radicado' => $request->numero_radicado,
-            'fecha_radicacion' => Carbon::parse($request->fecha_radicacion)->toDateString(),
-            'remitente' => $request->remitente,
-            'empresa' => $request->empresa,
-            'tipo_tramite_id' => $request->tipo_tramite_id,
-            'medio' => $request->medio,
-            'prioridad' => $request->prioridad,
-            'asunto' => $request->asunto,
-            'observaciones' => $request->observaciones,
-            'fecha_limite' => $fechaLimite->toDateString(),
-        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($radicado, $request, $fechaLimite) {
+            $radicado->update([
+                'numero_radicado' => $request->numero_radicado,
+                'fecha_radicacion' => Carbon::parse($request->fecha_radicacion)->toDateString(),
+                'remitente' => $request->remitente,
+                'empresa' => $request->empresa,
+                'tipo_tramite_id' => $request->tipo_tramite_id,
+                'medio' => $request->medio,
+                'prioridad' => $request->prioridad,
+                'asunto' => $request->asunto,
+                'observaciones' => $request->observaciones,
+                'fecha_limite' => $fechaLimite->toDateString(),
+            ]);
 
-        $radicado->responsables()->sync($request->responsables);
-
-        Auditoria::create([
-            'user_id' => Auth::id(),
-            'accion' => 'Editó un radicado',
-            'modelo' => 'Radicado',
-            'modelo_id' => $radicado->id,
-            'detalles' => $request->only(['numero_radicado', 'fecha_radicacion', 'remitente', 'empresa', 'tipo_tramite_id', 'medio', 'prioridad', 'asunto', 'observaciones', 'responsables']),
-        ]);
+            $radicado->responsables()->sync($request->responsables);
+        });
 
         return redirect()->route('radicados.show', $radicado)->with('success', 'Radicado actualizado correctamente.');
     }
@@ -264,28 +236,22 @@ class RadicadoController extends Controller
             'archivo_salida' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,zip,jpg,jpeg,png',
         ]);
 
-        $updateData = [
-            'fecha_salida' => Carbon::now()->toDateString(),
-            'estado' => 'completado',
-        ];
+        $archivoSalidaPath = null;
+        $archivoSalidaNombre = null;
 
         if ($request->hasFile('archivo_salida') && $request->file('archivo_salida')->isValid()) {
-            $updateData['archivo_salida_path'] = $request->file('archivo_salida')->store('radicados/salidas', 'public');
-            $updateData['archivo_salida_nombre'] = $request->file('archivo_salida')->getClientOriginalName();
+            $archivoSalidaPath = $request->file('archivo_salida')->store('radicados/salidas', 'local');
+            $archivoSalidaNombre = $request->file('archivo_salida')->getClientOriginalName();
         }
 
-        $radicado->update($updateData);
-
-        Auditoria::create([
-            'user_id' => Auth::id(),
-            'accion' => 'Completó un radicado',
-            'modelo' => 'Radicado',
-            'modelo_id' => $radicado->id,
-            'detalles' => [
-                'fecha_salida' => Carbon::now()->toDateString(),
-                'archivo_salida' => $radicado->archivo_salida_nombre,
-            ],
-        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($radicado, $archivoSalidaPath, $archivoSalidaNombre) {
+            $radicado->update([
+                'estado' => 'completado',
+                'fecha_salida' => Carbon::today()->toDateString(),
+                'archivo_salida_path' => $archivoSalidaPath,
+                'archivo_salida_nombre' => $archivoSalidaNombre,
+            ]);
+        });
 
         return redirect()->route('radicados.show', $radicado)->with('success', 'Trámite cerrado correctamente.');
     }
@@ -295,24 +261,24 @@ class RadicadoController extends Controller
         $path = $tipo === 'salida' ? $radicado->archivo_salida_path : $radicado->archivo_entrada_path;
         $nombre = $tipo === 'salida' ? $radicado->archivo_salida_nombre : $radicado->archivo_entrada_nombre;
 
-        if (! $path || ! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+        if (! $path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
             abort(404, 'El archivo solicitado no existe.');
         }
 
         $nombreDescarga = $nombre ?: basename($path);
 
-        return \Illuminate\Support\Facades\Storage::disk('public')->download($path, $nombreDescarga);
+        return \Illuminate\Support\Facades\Storage::disk('local')->download($path, $nombreDescarga);
     }
 
     public function verArchivo(Radicado $radicado, string $tipo)
     {
         $path = $tipo === 'salida' ? $radicado->archivo_salida_path : $radicado->archivo_entrada_path;
 
-        if (! $path || ! \Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+        if (! $path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
             abort(404, 'El archivo solicitado no existe.');
         }
 
-        $fullPath = \Illuminate\Support\Facades\Storage::disk('public')->path($path);
+        $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($path);
         $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
 
         return response()->file($fullPath, [
@@ -329,19 +295,13 @@ class RadicadoController extends Controller
             'motivo_anulacion' => 'required|string|max:255',
         ]);
 
-        $radicado->update([
-            'estado' => 'anulado',
-            'motivo_anulacion' => $request->motivo_anulacion,
-            'anulado_por' => Auth::id(),
-        ]);
-
-        Auditoria::create([
-            'user_id' => Auth::id(),
-            'accion' => 'Anuló un radicado',
-            'modelo' => 'Radicado',
-            'modelo_id' => $radicado->id,
-            'detalles' => ['motivo_anulacion' => $request->motivo_anulacion],
-        ]);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($radicado, $request) {
+            $radicado->update([
+                'estado' => 'anulado',
+                'motivo_anulacion' => $request->motivo_anulacion,
+                'anulado_por' => Auth::id(),
+            ]);
+        });
 
         return redirect()->route('radicados.index')->with('success', 'Radicado anulado correctamente.');
     }

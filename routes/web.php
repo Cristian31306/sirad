@@ -54,3 +54,9 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+// Rutas Públicas (Firmadas) para Responsables
+Route::middleware('signed')->group(function () {
+    Route::get('radicados/{radicado}/responsable/{responsable}/respuesta', [\App\Http\Controllers\RadicadoPublicController::class, 'showRespuestaForm'])->name('radicados.public.respuesta');
+    Route::post('radicados/{radicado}/responsable/{responsable}/respuesta', [\App\Http\Controllers\RadicadoPublicController::class, 'storeRespuesta'])->name('radicados.public.respuesta.store');
+});
