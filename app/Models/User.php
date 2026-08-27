@@ -77,6 +77,19 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    public function responsables()
+    {
+        return $this->hasMany(Responsable::class);
+    }
+
+    /**
+     * Get the auditorias associated with the user.
+     */
+    public function auditorias()
+    {
+        return $this->hasMany(Auditoria::class);
+    }
+
     public function isUsuario()
     {
         return $this->role === 'usuario';

@@ -67,12 +67,6 @@
                 </a>
                 @endcan
 
-                @can('auditoria.ver')
-                <a href="{{ route('auditoria.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {{ request()->routeIs('auditoria.*') ? 'bg-gray-700 text-white font-semibold' : 'text-gray-500 hover:text-white hover:bg-gray-800' }}">
-                    <i class="ph ph-shield-check text-xl opacity-60"></i>
-                    <span class="opacity-75">Auditoría</span>
-                </a>
-                @endcan
             @endif
         </nav>
     </div>
