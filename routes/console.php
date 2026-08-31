@@ -8,7 +8,7 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote')->hourly();
 
-Schedule::command('radicados:check-vencimientos')->dailyAt('08:00');
+Schedule::command('radicados:check-vencimientos')->twiceDaily(8, 14);
 
 // Sincronizar festivos del año actual y el próximo automáticamente cada mes
 Schedule::command('sirad:sync-festivos')->monthly();

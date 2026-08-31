@@ -15,6 +15,9 @@ class NuevaRadicacionMail extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
+    public $tries = 5;
+    public $backoff = [60, 300, 900, 1800]; // Reintentos exponenciales en segundos
+
     public $radicado;
     public $responsable;
 
