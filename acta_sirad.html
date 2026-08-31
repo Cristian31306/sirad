@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<style>
+  /* Configuración estricta de página para impresión */
+  @page {
+    size: letter;
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Arial', sans-serif;
+    color: #000000;
+    line-height: 1.5;
+    font-size: 11pt;
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+  }
+
+  .header-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #000000;
+  }
+
+  .header-table td {
+    padding: 10px;
+    vertical-align: middle;
+  }
+
+  .title-main {
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    text-transform: uppercase;
+    margin: 0 0 5px 0;
+  }
+
+  .title-sub {
+    font-size: 12pt;
+    font-weight: bold;
+    text-align: center;
+    margin: 0;
+  }
+
+  .metadata-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 10pt;
+  }
+
+  .metadata-table th, .metadata-table td {
+    border: 1px solid #000000;
+    padding: 8px;
+    vertical-align: top;
+  }
+
+  .metadata-table th {
+    background-color: #f2f2f2 !important;
+    text-align: left;
+    width: 25%;
+    font-weight: bold;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .metadata-table td {
+    width: 25%;
+  }
+
+  h2 {
+    font-size: 12pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 25px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  p {
+    text-align: justify;
+    margin: 0 0 15px 0;
+  }
+
+  ul, ol {
+    margin: 0 0 15px 0;
+    padding-left: 30px;
+    text-align: justify;
+  }
+
+  li {
+    margin-bottom: 8px;
+  }
+
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 10pt;
+  }
+
+  table.data-table th, table.data-table td {
+    border: 1px solid #000000;
+    padding: 10px;
+    vertical-align: top;
+  }
+
+  table.data-table th {
+    background-color: #f2f2f2 !important;
+    text-align: center;
+    font-weight: bold;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  table.data-table td:nth-child(1) {
+    font-weight: bold;
+  }
+
+  .clause-box {
+    margin: 15px 0;
+    padding: 0;
+  }
+
+  .signatures-container {
+    width: 100%;
+    margin-top: 60px;
+    border-collapse: collapse;
+    page-break-inside: avoid;
+  }
+
+  .signatures-container td {
+    width: 50%;
+    padding: 10px 30px;
+    text-align: center;
+    vertical-align: top;
+  }
+
+  .signature-line {
+    border-top: 1px solid #000000;
+    margin-top: 50px;
+    padding-top: 10px;
+  }
+
+  .sign-name {
+    font-weight: bold;
+    font-size: 11pt;
+    margin-bottom: 3px;
+  }
+
+  .sign-role {
+    font-size: 10pt;
+  }
+  
+  @media print {
+    body {
+      background: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <table class="header-table">
+    <tr>
+      <td>
+        <div class="title-main">ACTA DE ENTREGA TÉCNICA Y FUNCIONAL</div>
+        <div class="title-sub">Sistema de Control y Trazabilidad Interna de Radicados (SIRAD)</div>
+      </td>
+    </tr>
+  </table>
+
+  <table class="metadata-table">
+    <tr>
+      <th>Entidad / Dependencia:</th>
+      <td colspan="3">Secretaría de Programas y Proyectos Estratégicos y Especiales — Gobernación de Norte de Santander</td>
+    </tr>
+    <tr>
+      <th>Proyecto / Software:</th>
+      <td>SIRAD (Control y Trazabilidad de Radicados)</td>
+      <th>Fecha de Entrega:</th>
+      <td>Septiembre de 2026</td>
+    </tr>
+    <tr>
+      <th>Autor y Desarrollador:</th>
+      <td>Cristian Alexander Durán Medina</td>
+      <th>Modalidad:</th>
+      <td>Implementación de Solución Tecnológica</td>
+    </tr>
+  </table>
+
+  <h2>1. OBJETIVO Y ALCANCE FUNCIONAL</h2>
+  <p>
+  El presente documento certifica la entrega, socialización y puesta en marcha del sistema <strong>SIRAD</strong> para la gestión, seguimiento y control de flujo interno de radicados en la <strong>Secretaría de Programas y Proyectos Estratégicos y Especiales</strong>.
+  </p>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width: 25%;">Módulo</th>
+        <th style="width: 45%;">Descripción Funcional</th>
+        <th style="width: 30%;">Impacto Operativo</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1. Gestión de Tipos y Clasificación</td>
+        <td>Configuración de tipologías de trámites y parametrización de días hábiles de respuesta.</td>
+        <td>Estandarización y control exacto de plazos.</td>
+      </tr>
+      <tr>
+        <td>2. Registro y Asignación</td>
+        <td>Generación de radicado con archivo PDF adjunto y derivación directa a funcionarios.</td>
+        <td>Eliminación de duplicidad y agilidad operativa.</td>
+      </tr>
+      <tr>
+        <td>3. Directorio de Responsables</td>
+        <td>Administración de la base de funcionarios (nombre, correo corporativo y especialidad).</td>
+        <td>Canal centralizado de asignación sin triangulación.</td>
+      </tr>
+      <tr>
+        <td>4. Trazabilidad y Alertas</td>
+        <td>Semáforo visual (Pendiente, Alerta, Vencido, Completado, Anulado) y correos automáticos.</td>
+        <td>Mitigación de riesgos por vencimiento de términos legales.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. AUTORÍA Y CONDICIONES DE USO</h2>
+  <div class="clause-box">
+    <p><strong>2.1. Autoría:</strong> El sistema SIRAD (código fuente, arquitectura y diseño) fue desarrollado por <strong>Cristian Alexander Durán Medina</strong>, quien conserva la autoría de la obra y la facultad de referenciar este proyecto en su hoja de vida y portafolio profesional como parte de su experiencia técnica.</p>
+    <p><strong>2.2. Alcance del Uso Autorizado:</strong> La presente entrega autoriza el uso, operación y administración del sistema exclusivamente por parte de la <strong>Secretaría de Programas y Proyectos Estratégicos y Especiales</strong>, para los fines descritos en este documento. Cualquier interés de otra dependencia, secretaría o entidad adscrita a la Gobernación en implementar o replicar el sistema deberá coordinarse directamente con el autor.</p>
+    <p><strong>2.3. Propiedad de los Datos:</strong> La Secretaría es propietaria de la información, radicados y archivos gestionados a través del sistema. El autor se compromete a mantener reserva sobre dicha información conforme a la normativa de protección de datos vigente.</p>
+  </div>
+
+  <h2>3. HOSPEDAJE TEMPORAL Y MIGRACIÓN</h2>
+  <p>
+  El aplicativo opera temporalmente en una instancia VPS facilitada por el desarrollador para permitir su inicio inmediato. Cuando la Gobernación de Norte de Santander o su área de TI lo requiera:
+  </p>
+  <ul>
+    <li><strong>Entrega de Código y Base de Datos:</strong> Se facilitará el código fuente y las copias de seguridad estructuradas (archivos SQL y adjuntos) para su migración y despliegue en la infraestructura propia de la entidad.</li>
+  </ul>
+
+  <h2>4. DELIMITACIÓN DE RESPONSABILIDADES</h2>
+  <ul>
+    <li><strong>Seguridad de Cuentas:</strong> Cada funcionario es responsable de la confidencialidad de sus claves de acceso.</li>
+    <li><strong>Exoneración por Uso de Terceros:</strong> El desarrollador queda exento de responsabilidad civil, penal o disciplinaria derivada del manejo o pérdida de credenciales por parte del personal de la entidad.</li>
+    <li><strong>Alcance de la Entrega:</strong> La presente acta formaliza la entrega de la versión 1.0 funcional con socialización a los usuarios designados.</li>
+  </ul>
+
+  <table class="signatures-container">
+    <tr>
+      <td>
+        <div class="signature-line">
+          <div class="sign-name">Cristian Alexander Durán Medina</div>
+          <div class="sign-role">Autor y Desarrollador de Software</div>
+          <div class="sign-role">Algorah — Soluciones Tecnológicas</div>
+        </div>
+      </td>
+      <td>
+        <div class="signature-line">
+          <div class="sign-name">Secretaría de Programas y Proyectos Especiales</div>
+          <div class="sign-role">Gobernación de Norte de Santander</div>
+          <div class="sign-role">Recibido a Conformidad / Representante</div>
+        </div>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
