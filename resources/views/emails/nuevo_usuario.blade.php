@@ -41,7 +41,7 @@
                     </p>
                 </div>
 
-                <a href="{{ route('login') }}" class="btn">Iniciar Sesión Ahora</a>
+                <a href="{{ route('login') }}" class="btn" style="color: #ffffff !important; text-decoration: none;">Iniciar Sesión Ahora</a>
             </div>
             <div class="footer">
                 Este es un mensaje automático, por favor no responda este correo.

@@ -57,7 +57,7 @@ class NuevaRadicacionMail extends Mailable implements ShouldQueue
         $attachments = [];
 
         if ($this->radicado->hasArchivoEntrada()) {
-            $path = storage_path('app/public/' . $this->radicado->archivo_entrada_path);
+            $path = storage_path('app/private/' . $this->radicado->archivo_entrada_path);
             if (file_exists($path)) {
                 $attachments[] = Attachment::fromPath($path)
                     ->as($this->radicado->archivo_entrada_nombre);

@@ -55,8 +55,10 @@ class RadicadoPublicController extends Controller
 
 
             // Notificar a todos los usuarios
-            $usuarios = User::all();
-            Notification::send($usuarios, new RespuestaSubidaNotification($radicado, $responsable));
+            $usuarios = User::where('role', 'usuario')->get();
+            if ($usuarios->isNotEmpty()) {
+                Notification::send($usuarios, new RespuestaSubidaNotification($radicado, $responsable));
+            }
 
             return view('public.radicado.respuesta_completada', compact('radicado', 'responsable'))->with('success', 'Archivo subido correctamente. El radicado ha sido actualizado.');
         }
