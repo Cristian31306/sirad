@@ -22,10 +22,6 @@ class Radicado extends Model
         'medio',
         'prioridad',
         'observaciones',
-        'archivo_entrada_path',
-        'archivo_entrada_nombre',
-        'archivo_salida_path',
-        'archivo_salida_nombre',
     ];
 
     protected $casts = [
@@ -36,12 +32,12 @@ class Radicado extends Model
 
     public function hasArchivoEntrada(): bool
     {
-        return ! empty($this->archivo_entrada_path);
+        return $this->adjuntos()->where('tipo', 'entrada')->exists();
     }
 
     public function hasArchivoSalida(): bool
     {
-        return ! empty($this->archivo_salida_path);
+        return $this->adjuntos()->where('tipo', 'salida')->exists();
     }
 
     public function funcionario()
@@ -51,7 +47,8 @@ class Radicado extends Model
 
     public function responsables()
     {
-        return $this->belongsToMany(Responsable::class, 'radicado_responsable');
+        return $this->belongsToMany(Responsable::class, 'radicado_responsable')
+                    ->withPivot('hubo_rebote', 'fecha_rebote');
     }
 
     public function anulador()
@@ -62,5 +59,10 @@ class Radicado extends Model
     public function tipoTramite()
     {
         return $this->belongsTo(TipoTramite::class, 'tipo_tramite_id');
+    }
+
+    public function adjuntos()
+    {
+        return $this->hasMany(RadicadoAdjunto::class, 'radicado_id');
     }
 }

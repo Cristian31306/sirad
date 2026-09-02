@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => CheckRole::class,
             'force_password' => ForcePasswordChange::class,
         ]);
+        
+        $middleware->validateCsrfTokens(except: [
+            'webhook/brevo',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

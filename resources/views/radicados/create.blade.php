@@ -187,17 +187,17 @@
                             <textarea id="observaciones" name="observaciones" rows="2" placeholder="Notas adicionales o comentarios" class="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm bg-gray-50 px-4 py-3">{{ old('observaciones') }}</textarea>
                         </div>
 
-                        <!-- Documento Adjunto Inicial (Entrada) -->
+                        <!-- Documentos Adjuntos Iniciales (Entrada) -->
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">Documento Inicial / Entrada (Opcional)</label>
-                            <div class="border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-2xl p-6 text-center bg-gray-50/60 transition group cursor-pointer" onclick="document.getElementById('archivo_entrada').click()">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Documento(s) Inicial(es) / Entrada (Opcional)</label>
+                            <div class="border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-2xl p-6 text-center bg-gray-50/60 transition group cursor-pointer" onclick="document.getElementById('archivos_entrada').click()">
                                 <div class="flex flex-col items-center justify-center">
                                     <div class="w-12 h-12 rounded-2xl bg-blue-100/70 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition">
-                                        <i class="ph ph-upload-simple text-2xl"></i>
+                                        <i class="ph ph-files text-2xl"></i>
                                     </div>
-                                    <p class="text-sm font-semibold text-gray-800 mb-1">Haz clic para seleccionar o arrastra el archivo aquí</p>
-                                    <p class="text-xs text-gray-500">PDF, Word (DOC/DOCX), Excel (XLS/XLSX), Imágenes o ZIP (Hasta 10 MB)</p>
-                                    <input id="archivo_entrada" type="file" name="archivo_entrada" class="hidden" onchange="const name = this.files[0]?.name; document.getElementById('selected-filename').textContent = name ? 'Archivo seleccionado: ' + name : '';">
+                                    <p class="text-sm font-semibold text-gray-800 mb-1">Haz clic para seleccionar o arrastra los archivos aquí</p>
+                                    <p class="text-xs text-gray-500">Puedes seleccionar múltiples archivos (PDF, Word, Excel, Imágenes, ZIP)</p>
+                                    <input id="archivos_entrada" type="file" name="archivos_entrada[]" multiple class="hidden" onchange="const count = this.files.length; document.getElementById('selected-filename').textContent = count > 0 ? count + ' archivo(s) seleccionado(s)' : '';">
                                     <span id="selected-filename" class="text-xs font-bold text-blue-600 mt-2"></span>
                                 </div>
                             </div>

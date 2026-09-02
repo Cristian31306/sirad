@@ -11,5 +11,5 @@ class TipoTramite extends Model
     use SoftDeletes;
     use HasFactory;
 
-    protected $fillable = ['nombre', 'dias_habiles', 'activo'];
+    protected $fillable = ['nombre', 'dias_habiles', 'tipo_dias', 'activo'];
 }

@@ -46,6 +46,7 @@ class TipoTramiteController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:255|unique:tipo_tramites,nombre',
             'dias_habiles' => 'required|integer|min:1|max:365',
+            'tipo_dias' => 'required|in:habiles,calendario',
         ]);
 
         $tipoTramite = TipoTramite::create($request->all());
@@ -75,6 +76,7 @@ class TipoTramiteController extends Controller
         $request->validate([
             'nombre' => 'required|string|max:255|unique:tipo_tramites,nombre,'.$tipoTramite->id,
             'dias_habiles' => 'required|integer|min:1|max:365',
+            'tipo_dias' => 'required|in:habiles,calendario',
         ]);
 
         $tipoTramite->update($request->all());

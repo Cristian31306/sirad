@@ -61,3 +61,6 @@ Route::middleware('signed')->group(function () {
     Route::get('radicados/{radicado}/responsable/{responsable}/respuesta', [\App\Http\Controllers\RadicadoPublicController::class, 'showRespuestaForm'])->name('radicados.public.respuesta');
     Route::post('radicados/{radicado}/responsable/{responsable}/respuesta', [\App\Http\Controllers\RadicadoPublicController::class, 'storeRespuesta'])->name('radicados.public.respuesta.store');
 });
+
+// Webhook Brevo (sin CSRF)
+Route::post('webhook/brevo', [\App\Http\Controllers\Webhook\BrevoWebhookController::class, 'handleWebhook'])->name('webhook.brevo');

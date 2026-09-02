@@ -36,13 +36,23 @@
                                 </div>
                                 
                                 <div>
-                                    <label for="dias_habiles" class="block text-sm font-semibold text-gray-700 mb-2">Días Hábiles <span class="text-red-500">*</span></label>
+                                    <label for="dias_habiles" class="block text-sm font-semibold text-gray-700 mb-2">Cantidad de Días <span class="text-red-500">*</span></label>
                                     <div class="relative">
                                         <input type="number" id="dias_habiles" name="dias_habiles" value="{{ old('dias_habiles', 15) }}" min="1" max="365" class="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm bg-gray-50 px-4 py-2.5 pr-12" required>
                                         <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">días</span>
                                     </div>
-                                    <p class="text-xs text-gray-500 mt-1">Tiempo de respuesta excluyendo fines de semana y festivos.</p>
                                     @error('dias_habiles')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="tipo_dias" class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Días <span class="text-red-500">*</span></label>
+                                    <select id="tipo_dias" name="tipo_dias" class="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm bg-gray-50 px-4 py-2.5" required>
+                                        <option value="habiles" {{ old('tipo_dias') == 'habiles' ? 'selected' : '' }}>Días Hábiles (L a V)</option>
+                                        <option value="calendario" {{ old('tipo_dias') == 'calendario' ? 'selected' : '' }}>Días Calendario (L a D)</option>
+                                    </select>
+                                    @error('tipo_dias')
                                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
