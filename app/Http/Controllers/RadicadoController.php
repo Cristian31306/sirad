@@ -180,14 +180,15 @@ class RadicadoController extends Controller
 
             $radicado->responsables()->attach($request->responsables);
 
-            if ($radicado->responsables->isNotEmpty()) {
-                foreach ($radicado->responsables as $resp) {
-                    Mail::to($resp->correo)->queue(new NuevaRadicacionMail($radicado, $resp));
-                }
-            }
-
             return $radicado;
         });
+
+        // Enviar correos fuera de la transacción una vez confirmados los datos en BD
+        if ($radicado->responsables->isNotEmpty()) {
+            foreach ($radicado->responsables as $resp) {
+                Mail::to($resp->correo)->queue(new NuevaRadicacionMail($radicado, $resp));
+            }
+        }
 
         $nombresResponsables = $radicado->responsables->pluck('nombre')->implode(', ') ?: 'N/A';
 

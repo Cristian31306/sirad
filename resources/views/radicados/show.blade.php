@@ -605,7 +605,7 @@
                                 sync() {
                                     const dt = new DataTransfer();
                                     this.salidaFiles.forEach(f => dt.items.add(f));
-                                    this.$refs.salidaInput.files = dt.files;
+                                    this.$refs.salidaSubmit.files = dt.files;
                                 },
                                 formatBytes(bytes) {
                                     if (!bytes) return '0 B';
@@ -641,15 +641,24 @@
                                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                                         {{ $radicado->hasArchivoSalida() ? 'Añadir más Documentos de Cierre (Opcional)' : 'Adjuntar Documento(s) de Respuesta (Opcional)' }}
                                     </label>
+                                    
+                                    <!-- Input real enviado en el PATCH -->
                                     <input 
-                                        x-ref="salidaInput"
+                                        x-ref="salidaSubmit"
                                         type="file" 
                                         name="archivos_salida[]" 
+                                        multiple 
+                                        class="hidden">
+
+                                    <!-- Input auxiliar para abrir el diálogo -->
+                                    <input 
+                                        x-ref="salidaPicker"
+                                        type="file" 
                                         multiple 
                                         class="hidden"
                                         @change="addFiles($event.target.files); $event.target.value = ''">
                                     
-                                    <div @click="$refs.salidaInput.click()" class="border-2 border-dashed border-gray-300 hover:border-blue-400 bg-white rounded-xl p-3.5 text-center cursor-pointer transition">
+                                    <div @click="$refs.salidaPicker.click()" class="border-2 border-dashed border-gray-300 hover:border-blue-400 bg-white rounded-xl p-3.5 text-center cursor-pointer transition">
                                         <div class="flex items-center justify-center gap-2 text-xs font-semibold text-blue-600">
                                             <i class="ph ph-upload-simple text-base"></i>
                                             <span>Seleccionar archivos de respuesta...</span>

@@ -68,6 +68,21 @@
                             <td class="meta-label">Observaciones</td>
                             <td class="meta-value">{{ $radicado->observaciones ?: 'Ninguna' }}</td>
                         </tr>
+                        @php
+                            $adjuntosMail = $radicado->adjuntos()->where('tipo', 'entrada')->get();
+                        @endphp
+                        @if($adjuntosMail->isNotEmpty())
+                        <tr>
+                            <td class="meta-label">Archivos Adjuntos</td>
+                            <td class="meta-value">
+                                <ul style="margin: 0; padding-left: 18px; color: #2563eb;">
+                                    @foreach($adjuntosMail as $adj)
+                                        <li style="margin-bottom: 2px; font-weight: 600;">{{ $adj->nombre_original }}</li>
+                                    @endforeach
+                                </ul>
+                            </td>
+                        </tr>
+                        @endif
                         <tr>
                             <td class="meta-label" style="border-bottom: none; padding-bottom: 0;">Fecha Límite</td>
                             <td class="meta-value" style="border-bottom: none; padding-bottom: 0;">

@@ -200,8 +200,7 @@
                                     }
                                 }
                                 this.syncInput();
-                            },
-                            removeFile(index) {
+                                  removeFile(index) {
                                 this.files.splice(index, 1);
                                 this.syncInput();
                             },
@@ -212,7 +211,7 @@
                             syncInput() {
                                 const dt = new DataTransfer();
                                 this.files.forEach(f => dt.items.add(f));
-                                this.$refs.fileInput.files = dt.files;
+                                this.$refs.submitInput.files = dt.files;
                             },
                             formatBytes(bytes) {
                                 if (!bytes || bytes === 0) return '0 B';
@@ -250,23 +249,31 @@
                                 </template>
                             </div>
 
+                            <!-- Input real que se envía en el POST del formulario -->
+                            <input 
+                                x-ref="submitInput" 
+                                id="archivos_entrada" 
+                                type="file" 
+                                name="archivos_entrada[]" 
+                                multiple 
+                                class="hidden">
+
+                            <!-- Input auxiliar para abrir el diálogo de selección -->
+                            <input 
+                                x-ref="pickerInput" 
+                                type="file" 
+                                multiple 
+                                class="hidden" 
+                                @change="addFiles($event.target.files); $event.target.value = ''">
+
                             <!-- Dropzone interactiva -->
                             <div 
                                 @dragover.prevent="isDragging = true"
                                 @dragleave.prevent="isDragging = false"
                                 @drop.prevent="isDragging = false; addFiles($event.dataTransfer.files)"
-                                @click="$refs.fileInput.click()"
+                                @click="$refs.pickerInput.click()"
                                 :class="isDragging ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-400/30' : 'border-gray-300 hover:border-blue-400 bg-gray-50/60'"
                                 class="border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer group relative">
-                                
-                                <input 
-                                    x-ref="fileInput" 
-                                    id="archivos_entrada" 
-                                    type="file" 
-                                    name="archivos_entrada[]" 
-                                    multiple 
-                                    class="hidden" 
-                                    @change="addFiles($event.target.files); $event.target.value = ''">
                                 
                                 <div class="flex flex-col items-center justify-center pointer-events-none">
                                     <div class="w-12 h-12 rounded-2xl bg-blue-100/80 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
