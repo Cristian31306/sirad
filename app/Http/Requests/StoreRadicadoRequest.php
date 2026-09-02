@@ -34,7 +34,22 @@ class StoreRadicadoRequest extends FormRequest
             'observaciones' => 'nullable|string',
             'responsables' => 'required|array|min:1',
             'responsables.*' => 'exists:responsables,id',
-            'archivo_entrada' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,zip,jpg,jpeg,png',
+            'archivos_entrada' => 'nullable|array|max:20',
+            'archivos_entrada.*' => 'file|max:25600|mimes:pdf,doc,docx,xls,xlsx,zip,rar,7z,jpg,jpeg,png',
+        ];
+    }
+
+    /**
+     * Custom messages for validation errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'archivos_entrada.max' => 'No puedes subir más de 20 archivos al mismo tiempo.',
+            'archivos_entrada.*.max' => 'Cada archivo no puede superar los 25 MB.',
+            'archivos_entrada.*.mimes' => 'Solo se permiten archivos en formato PDF, Word, Excel, Imágenes (JPG, PNG) o Comprimidos (ZIP, RAR, 7Z).',
         ];
     }
 }

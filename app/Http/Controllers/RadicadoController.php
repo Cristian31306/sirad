@@ -232,7 +232,7 @@ class RadicadoController extends Controller
 
     public function show(Radicado $radicado)
     {
-        $radicado->load('responsables', 'anulador', 'tipoTramite');
+        $radicado->load('responsables', 'anulador', 'tipoTramite', 'adjuntos');
         $tiposTramites = TipoTramite::where('activo', true)->get();
         $responsables = Responsable::all();
 
@@ -244,7 +244,12 @@ class RadicadoController extends Controller
         Gate::authorize('radicados.completar');
 
         $request->validate([
-            'archivos_salida.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,zip,jpg,jpeg,png',
+            'archivos_salida' => 'nullable|array|max:20',
+            'archivos_salida.*' => 'nullable|file|max:25600|mimes:pdf,doc,docx,xls,xlsx,zip,rar,7z,jpg,jpeg,png',
+        ], [
+            'archivos_salida.max' => 'No puedes subir más de 20 archivos al mismo tiempo.',
+            'archivos_salida.*.max' => 'Cada archivo no puede superar los 25 MB.',
+            'archivos_salida.*.mimes' => 'Solo se permiten archivos en formato PDF, Word, Excel, Imágenes (JPG, PNG) o Comprimidos (ZIP, RAR, 7Z).',
         ]);
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($radicado, $request) {
@@ -268,6 +273,58 @@ class RadicadoController extends Controller
         });
 
         return redirect()->route('radicados.show', $radicado)->with('success', 'Trámite cerrado correctamente.');
+    }
+
+    public function descargarTodos(Radicado $radicado, ?string $tipo = null)
+    {
+        $query = $radicado->adjuntos();
+        if ($tipo && in_array($tipo, ['entrada', 'salida'])) {
+            $query->where('tipo', $tipo);
+        }
+        $adjuntos = $query->get();
+
+        if ($adjuntos->isEmpty()) {
+            return back()->with('error', 'No hay archivos para descargar.');
+        }
+
+        if ($adjuntos->count() === 1) {
+            return $this->downloadArchivo($adjuntos->first());
+        }
+
+        $cleanRadicadoNum = preg_replace('/[^A-Za-z0-9_\-]/', '_', $radicado->numero_radicado);
+        $tipoSuffix = $tipo ? "_{$tipo}" : '_todos';
+        $zipFileName = "{$cleanRadicadoNum}{$tipoSuffix}.zip";
+        $tempZipPath = tempnam(sys_get_temp_dir(), 'sirad_zip_');
+
+        $zip = new \ZipArchive();
+        if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return back()->with('error', 'No se pudo generar el archivo comprimido.');
+        }
+
+        $usedNames = [];
+        foreach ($adjuntos as $adjunto) {
+            if ($adjunto->path && \Illuminate\Support\Facades\Storage::disk('local')->exists($adjunto->path)) {
+                $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($adjunto->path);
+                $originalName = $adjunto->nombre_original ?: basename($adjunto->path);
+
+                $entryName = $originalName;
+                $counter = 1;
+                while (in_array($entryName, $usedNames)) {
+                    $info = pathinfo($originalName);
+                    $namePart = $info['filename'];
+                    $extPart = isset($info['extension']) ? '.' . $info['extension'] : '';
+                    $entryName = "{$namePart} ({$counter}){$extPart}";
+                    $counter++;
+                }
+                $usedNames[] = $entryName;
+
+                $zip->addFile($fullPath, $entryName);
+            }
+        }
+
+        $zip->close();
+
+        return response()->download($tempZipPath, $zipFileName)->deleteFileAfterSend(true);
     }
 
     public function downloadArchivo(\App\Models\RadicadoAdjunto $adjunto)

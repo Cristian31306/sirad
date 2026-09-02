@@ -156,19 +156,20 @@ class SystemE2ETest extends TestCase
             'asunto' => 'Solicitud de pavimentación urgente',
             'observaciones' => 'Adjunto documento escaneado',
             'responsables' => [$this->responsable1->id, $this->responsable2->id],
-            'archivo_entrada' => $archivoEntrada,
+            'archivos_entrada' => [$archivoEntrada],
         ]);
 
         $storeResponse->assertRedirect(route('radicados.index'));
         $this->assertDatabaseHas('radicados', [
             'numero_radicado' => 'RAD-E2E-001',
-            'archivo_entrada_nombre' => 'memorial_peticion.pdf',
             'estado' => 'pendiente',
         ]);
 
         $radicado = Radicado::where('numero_radicado', 'RAD-E2E-001')->first();
         $this->assertCount(2, $radicado->responsables);
-        $storage->assertExists($radicado->archivo_entrada_path);
+        $this->assertCount(1, $radicado->adjuntos);
+        $this->assertEquals('memorial_peticion.pdf', $radicado->adjuntos->first()->nombre_original);
+        $storage->assertExists($radicado->adjuntos->first()->path);
 
         // 3.2 Visualización de Detalle y Descarga
         $showResponse = $this->actingAs($this->secretaria)->get(route('radicados.show', $radicado));
@@ -176,7 +177,7 @@ class SystemE2ETest extends TestCase
         $showResponse->assertSee('memorial_peticion.pdf');
         $showResponse->assertSee('Ing. Benito Pérez');
 
-        $descargaResponse = $this->actingAs($this->secretaria)->get(route('radicados.archivo.descargar', [$radicado, 'entrada']));
+        $descargaResponse = $this->actingAs($this->secretaria)->get(route('radicados.archivo.descargar', $radicado->adjuntos->first()));
         $descargaResponse->assertStatus(200);
 
         // 3.3 Edición directa con permisos
@@ -203,22 +204,24 @@ class SystemE2ETest extends TestCase
         $archivoSalida = UploadedFile::fake()->create('oficio_respuesta_ofi_001.pdf', 512, 'application/pdf');
 
         $cierreResponse = $this->actingAs($this->secretaria)->patch(route('radicados.cierre', $radicado), [
-            'archivo_salida' => $archivoSalida,
+            'archivos_salida' => [$archivoSalida],
         ]);
 
         $cierreResponse->assertRedirect(route('radicados.show', $radicado));
         $radicado->refresh();
         $this->assertEquals('completado', $radicado->estado);
-        $this->assertEquals('oficio_respuesta_ofi_001.pdf', $radicado->archivo_salida_nombre);
-        $storage->assertExists($radicado->archivo_salida_path);
+        $salidaAdjunto = $radicado->adjuntos()->where('tipo', 'salida')->first();
+        $this->assertNotNull($salidaAdjunto);
+        $this->assertEquals('oficio_respuesta_ofi_001.pdf', $salidaAdjunto->nombre_original);
+        $storage->assertExists($salidaAdjunto->path);
     }
 
     public function test_radicado_validation_prevents_invalid_data_and_oversized_files(): void
     {
         Storage::fake('public');
 
-        // Archivo que excede el límite de 10 MB (ej: 12 MB = 12288 KB)
-        $archivoGigante = UploadedFile::fake()->create('archivo_muy_pesado.pdf', 12288, 'application/pdf');
+        // Archivo que excede el límite (ej: 30 MB = 30720 KB)
+        $archivoGigante = UploadedFile::fake()->create('archivo_muy_pesado.pdf', 30720, 'application/pdf');
 
         $response = $this->actingAs($this->secretaria)->post(route('radicados.store'), [
             'numero_radicado' => '',
@@ -229,7 +232,7 @@ class SystemE2ETest extends TestCase
             'prioridad' => 'Invalida',
             'asunto' => '',
             'responsables' => [],
-            'archivo_entrada' => $archivoGigante,
+            'archivos_entrada' => [$archivoGigante],
         ]);
 
         $response->assertSessionHasErrors([
@@ -240,7 +243,7 @@ class SystemE2ETest extends TestCase
             'prioridad',
             'asunto',
             'responsables',
-            'archivo_entrada',
+            'archivos_entrada.0',
         ]);
     }
 
@@ -343,6 +346,7 @@ class SystemE2ETest extends TestCase
         $createResponse = $this->actingAs($this->secretaria)->post(route('tipos-tramites.store'), [
             'nombre' => 'Solicitud de Concepto Ambiental',
             'dias_habiles' => 20,
+            'tipo_dias' => 'habiles',
         ]);
         $createResponse->assertRedirect(route('tipos-tramites.index'));
         $this->assertDatabaseHas('tipo_tramites', ['nombre' => 'Solicitud de Concepto Ambiental']);

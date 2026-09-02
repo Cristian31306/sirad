@@ -334,84 +334,187 @@
         </div>
 
         <!-- Documentos y Anexos -->
+        @php
+            $entradas = $radicado->adjuntos->where('tipo', 'entrada');
+            $salidas = $radicado->adjuntos->where('tipo', 'salida');
+            $totalAdjuntos = $radicado->adjuntos->count();
+
+            $formatFileInfo = function($filename, $path) {
+                $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                $sizeStr = '';
+                if ($path && \Illuminate\Support\Facades\Storage::disk('local')->exists($path)) {
+                    $bytes = \Illuminate\Support\Facades\Storage::disk('local')->size($path);
+                    $sizeStr = $bytes > 1048576 ? round($bytes / 1048576, 1) . ' MB' : round($bytes / 1024, 0) . ' KB';
+                }
+
+                $theme = match($ext) {
+                    'pdf' => ['icon' => 'ph-file-pdf', 'color' => 'text-red-600 bg-red-50 border-red-200', 'badge' => 'bg-red-100 text-red-700'],
+                    'doc', 'docx' => ['icon' => 'ph-file-doc', 'color' => 'text-blue-600 bg-blue-50 border-blue-200', 'badge' => 'bg-blue-100 text-blue-700'],
+                    'xls', 'xlsx', 'csv' => ['icon' => 'ph-file-xls', 'color' => 'text-emerald-600 bg-emerald-50 border-emerald-200', 'badge' => 'bg-emerald-100 text-emerald-700'],
+                    'jpg', 'jpeg', 'png', 'gif', 'webp' => ['icon' => 'ph-file-image', 'color' => 'text-indigo-600 bg-indigo-50 border-indigo-200', 'badge' => 'bg-indigo-100 text-indigo-700'],
+                    'zip', 'rar', '7z', 'tar', 'gz' => ['icon' => 'ph-file-zip', 'color' => 'text-amber-600 bg-amber-50 border-amber-200', 'badge' => 'bg-amber-100 text-amber-700'],
+                    default => ['icon' => 'ph-file-text', 'color' => 'text-slate-600 bg-slate-50 border-slate-200', 'badge' => 'bg-slate-100 text-slate-700'],
+                };
+
+                return [
+                    'ext' => strtoupper($ext ?: 'FILE'),
+                    'size' => $sizeStr,
+                    'theme' => $theme
+                ];
+            };
+        @endphp
+
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 class="font-bold text-gray-800 text-lg border-b border-gray-100 pb-3 mb-4 flex items-center justify-between">
-                <span class="flex items-center gap-2">
-                    <i class="ph ph-paperclip text-blue-600 text-xl"></i>
-                    Documentos y Anexos
-                </span>
-            </h3>
-
-            <div class="space-y-4">
-                <!-- Documentos Iniciales (Entrada) -->
-                @php $entradas = $radicado->adjuntos()->where('tipo', 'entrada')->get(); @endphp
-                @if($entradas->isNotEmpty())
-                    @foreach($entradas as $entrada)
-                        <div class="border border-gray-100 rounded-xl p-4 bg-gray-50/50 mb-4">
-                            <div class="flex items-center justify-between flex-wrap gap-3">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl">
-                                        <i class="ph ph-file-text"></i>
-                                    </div>
-                                    <div>
-                                        <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Documento de Entrada</span>
-                                        <p class="font-medium text-gray-900 text-sm break-all">{{ $entrada->nombre_original }}</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center gap-2">
-                                    <a href="{{ route('radicados.archivo.ver', $entrada) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-blue-600 shadow-sm transition">
-                                        <i class="ph ph-eye"></i> Visualizar
-                                    </a>
-                                    <a href="{{ route('radicados.archivo.descargar', $entrada) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow-sm transition">
-                                        <i class="ph ph-download-simple"></i> Descargar
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                @else
-                    <div class="border border-gray-100 rounded-xl p-4 bg-gray-50/50 mb-4 text-center">
-                        <p class="text-xs text-gray-500 italic">No se adjuntaron archivos al momento de radicar</p>
+            <div class="border-b border-gray-100 pb-3 mb-6 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <i class="ph ph-paperclip text-lg"></i>
                     </div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 text-lg leading-tight">Documentos y Anexos</h3>
+                        <p class="text-xs text-gray-400">Archivos adjuntos vinculados a este radicado</p>
+                    </div>
+                </div>
+
+                @if($totalAdjuntos >= 2)
+                    <a href="{{ route('radicados.adjuntos.descargar-todos', $radicado) }}" 
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 shadow-sm transition"
+                       title="Descargar todos los archivos adjuntos en un solo archivo .ZIP">
+                        <i class="ph ph-archive text-sm"></i> Descargar todos (.ZIP)
+                    </a>
                 @endif
+            </div>
 
-                <!-- Documentos de Respuesta (Salida) -->
-                @php $salidas = $radicado->adjuntos()->where('tipo', 'salida')->get(); @endphp
-                @if($salidas->isNotEmpty())
-                    @foreach($salidas as $salida)
-                        <div class="border border-gray-100 rounded-xl p-4 bg-gray-50/50 mt-4 mb-4">
-                            <div class="flex items-center justify-between flex-wrap gap-3">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center text-xl">
-                                        <i class="ph ph-file-arrow-up"></i>
-                                    </div>
-                                    <div>
-                                        <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider block">Documento de Respuesta / Salida</span>
-                                        <p class="font-medium text-gray-900 text-sm break-all">{{ $salida->nombre_original }}</p>
-                                    </div>
-                                </div>
+            <div class="space-y-6">
+                <!-- Documentos Iniciales (Entrada) -->
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                            <i class="ph ph-tray-arrow-down text-blue-500 text-base"></i>
+                            Documentos de Entrada
+                            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800">
+                                {{ $entradas->count() }}
+                            </span>
+                        </span>
 
-                                <div class="flex items-center gap-2">
-                                    <a href="{{ route('radicados.archivo.ver', $salida) }}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-green-600 shadow-sm transition">
-                                        <i class="ph ph-eye"></i> Visualizar
-                                    </a>
-                                    <a href="{{ route('radicados.archivo.descargar', $salida) }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 shadow-sm transition">
-                                        <i class="ph ph-download-simple"></i> Descargar
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
-                @else
-                    <div class="border border-gray-100 rounded-xl p-4 bg-gray-50/50 mt-4 text-center">
-                        @if($radicado->estado === 'completado')
-                            <p class="text-xs text-gray-500 italic">Trámite completado sin archivos adjuntos de respuesta</p>
-                        @else
-                            <p class="text-xs text-gray-500 italic">Pendiente de cierre y respuesta</p>
+                        @if($entradas->count() >= 2)
+                            <a href="{{ route('radicados.adjuntos.descargar-todos', ['radicado' => $radicado, 'tipo' => 'entrada']) }}" 
+                               class="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1">
+                                <i class="ph ph-download-simple"></i> Bajar entrada (.zip)
+                            </a>
                         @endif
                     </div>
-                @endif
+
+                    @if($entradas->isNotEmpty())
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            @foreach($entradas as $entrada)
+                                @php $info = $formatFileInfo($entrada->nombre_original, $entrada->path); @endphp
+                                <div class="flex flex-col justify-between p-3.5 bg-gray-50/70 hover:bg-white border border-gray-200 hover:border-blue-300 rounded-xl transition shadow-sm hover:shadow group">
+                                    <div class="flex items-start gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border font-bold text-xl {{ $info['theme']['color'] }}">
+                                            <i class="ph {{ $info['theme']['icon'] }}"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="font-medium text-gray-900 text-xs break-all line-clamp-2" title="{{ $entrada->nombre_original }}">
+                                                {{ $entrada->nombre_original }}
+                                            </p>
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase {{ $info['theme']['badge'] }}">
+                                                    {{ $info['ext'] }}
+                                                </span>
+                                                @if($info['size'])
+                                                    <span class="text-[11px] text-gray-400">{{ $info['size'] }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 pt-2 border-t border-gray-200/60 justify-end">
+                                        <a href="{{ route('radicados.archivo.ver', $entrada) }}" target="_blank" 
+                                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-blue-600 transition shadow-2xs">
+                                            <i class="ph ph-eye"></i> Ver
+                                        </a>
+                                        <a href="{{ route('radicados.archivo.descargar', $entrada) }}" 
+                                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition shadow-2xs">
+                                            <i class="ph ph-download-simple"></i> Descargar
+                                        </a>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="border border-dashed border-gray-200 rounded-xl p-4 text-center bg-gray-50/50">
+                            <p class="text-xs text-gray-500 italic">No se adjuntaron archivos al momento de radicar</p>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- Documentos de Respuesta (Salida) -->
+                <div class="pt-4 border-t border-gray-100">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                            <i class="ph ph-tray-arrow-up text-emerald-500 text-base"></i>
+                            Documentos de Respuesta / Salida
+                            <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold {{ $salidas->isNotEmpty() ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-600' }}">
+                                {{ $salidas->count() }}
+                            </span>
+                        </span>
+
+                        @if($salidas->count() >= 2)
+                            <a href="{{ route('radicados.adjuntos.descargar-todos', ['radicado' => $radicado, 'tipo' => 'salida']) }}" 
+                               class="text-[11px] font-semibold text-emerald-600 hover:text-emerald-800 hover:underline flex items-center gap-1">
+                                <i class="ph ph-download-simple"></i> Bajar salida (.zip)
+                            </a>
+                        @endif
+                    </div>
+
+                    @if($salidas->isNotEmpty())
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            @foreach($salidas as $salida)
+                                @php $info = $formatFileInfo($salida->nombre_original, $salida->path); @endphp
+                                <div class="flex flex-col justify-between p-3.5 bg-emerald-50/30 hover:bg-white border border-emerald-200 hover:border-emerald-300 rounded-xl transition shadow-sm hover:shadow group">
+                                    <div class="flex items-start gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border font-bold text-xl {{ $info['theme']['color'] }}">
+                                            <i class="ph {{ $info['theme']['icon'] }}"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <p class="font-medium text-gray-900 text-xs break-all line-clamp-2" title="{{ $salida->nombre_original }}">
+                                                {{ $salida->nombre_original }}
+                                            </p>
+                                            <div class="flex items-center gap-2 mt-1">
+                                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase {{ $info['theme']['badge'] }}">
+                                                    {{ $info['ext'] }}
+                                                </span>
+                                                @if($info['size'])
+                                                    <span class="text-[11px] text-gray-400">{{ $info['size'] }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 pt-2 border-t border-emerald-100 justify-end">
+                                        <a href="{{ route('radicados.archivo.ver', $salida) }}" target="_blank" 
+                                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 hover:text-emerald-600 transition shadow-2xs">
+                                            <i class="ph ph-eye"></i> Ver
+                                        </a>
+                                        <a href="{{ route('radicados.archivo.descargar', $salida) }}" 
+                                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition shadow-2xs">
+                                            <i class="ph ph-download-simple"></i> Descargar
+                                        </a>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="border border-dashed border-gray-200 rounded-xl p-4 text-center bg-gray-50/50">
+                            @if($radicado->estado === 'completado')
+                                <p class="text-xs text-gray-500 italic">Trámite completado sin archivos adjuntos de respuesta</p>
+                            @else
+                                <p class="text-xs text-gray-500 italic">Pendiente de cierre y respuesta</p>
+                            @endif
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
 
@@ -484,40 +587,99 @@
                         <div class="bg-blue-50/50 border border-dashed border-blue-300 rounded-xl p-5 text-center">
                             <p class="text-sm font-medium text-blue-800 mb-3">El trámite se encuentra abierto y pendiente de gestión.</p>
                             
-                            <form action="{{ route('radicados.cierre', $radicado) }}" method="POST" enctype="multipart/form-data">
+                            <form action="{{ route('radicados.cierre', $radicado) }}" method="POST" enctype="multipart/form-data" x-data="{
+                                salidaFiles: [],
+                                addFiles(fl) {
+                                    const current = this.salidaFiles.map(f => f.name + '-' + f.size);
+                                    for (let i = 0; i < fl.length; i++) {
+                                        if (!current.includes(fl[i].name + '-' + fl[i].size)) {
+                                            this.salidaFiles.push(fl[i]);
+                                        }
+                                    }
+                                    this.sync();
+                                },
+                                removeFile(idx) {
+                                    this.salidaFiles.splice(idx, 1);
+                                    this.sync();
+                                },
+                                sync() {
+                                    const dt = new DataTransfer();
+                                    this.salidaFiles.forEach(f => dt.items.add(f));
+                                    this.$refs.salidaInput.files = dt.files;
+                                },
+                                formatBytes(bytes) {
+                                    if (!bytes) return '0 B';
+                                    const k = 1024;
+                                    const sizes = ['B', 'KB', 'MB', 'GB'];
+                                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                                    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+                                }
+                            }">
                                 @csrf
                                 @method('PATCH')
 
                                 @if($radicado->hasArchivoSalida())
-                                    <div class="mb-4 bg-green-100 border border-green-200 rounded-xl p-3 text-left">
+                                    <div class="mb-4 bg-green-100/70 border border-green-200 rounded-xl p-3 text-left">
                                         <div class="flex items-start gap-2">
-                                            <i class="ph-fill ph-check-circle text-green-600 mt-0.5"></i>
+                                            <i class="ph-fill ph-check-circle text-green-600 mt-0.5 text-lg"></i>
                                             <div>
                                                 <p class="text-xs font-bold text-green-800 uppercase tracking-wider mb-1">¡Respuesta(s) recibida(s)!</p>
-                                                <p class="text-sm text-green-700 leading-tight mb-2">Se adjuntaron los siguientes documentos:</p>
-                                                <div class="flex flex-col gap-2">
+                                                <p class="text-xs text-green-700 leading-tight mb-2">Ya se cuenta con los siguientes archivos:</p>
+                                                <div class="flex flex-col gap-1.5">
                                                     @foreach($salidas as $salida)
-                                                    <a href="{{ route('radicados.archivo.descargar', $salida) }}" class="inline-flex items-center gap-1 text-sm font-bold text-blue-700 hover:text-blue-900 underline bg-white/50 px-2 py-1 rounded-md">
+                                                    <a href="{{ route('radicados.archivo.descargar', $salida) }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-900 bg-white/80 px-2 py-1 rounded-md border border-green-200">
                                                         <i class="ph ph-file-arrow-down"></i> {{ $salida->nombre_original }}
                                                     </a>
                                                     @endforeach
                                                 </div>
-                                                <p class="text-xs text-green-600 mt-2 italic">Si cierras el trámite ahora, estos documentos se guardarán como la respuesta final.</p>
                                             </div>
                                         </div>
                                     </div>
-
-                                    <div class="mb-4 text-left border-t border-blue-200 pt-3">
-                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Añadir más Documentos (Opcional)</label>
-                                        <input type="file" name="archivos_salida[]" multiple class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer border border-gray-200 rounded-xl bg-white p-1">
-                                    </div>
-                                @else
-                                    <div class="mb-4 text-left">
-                                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Adjuntar Respuesta(s) / Oficio(s) de Cierre (Opcional)</label>
-                                        <input type="file" name="archivos_salida[]" multiple class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer border border-gray-200 rounded-xl bg-white p-1">
-                                        <p class="text-[10px] text-gray-400 mt-1">PDF, DOCX, ZIP, imágenes hasta 10 MB. Puede seleccionar varios.</p>
-                                    </div>
                                 @endif
+
+                                <div class="mb-4 text-left">
+                                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                                        {{ $radicado->hasArchivoSalida() ? 'Añadir más Documentos de Cierre (Opcional)' : 'Adjuntar Documento(s) de Respuesta (Opcional)' }}
+                                    </label>
+                                    <input 
+                                        x-ref="salidaInput"
+                                        type="file" 
+                                        name="archivos_salida[]" 
+                                        multiple 
+                                        class="hidden"
+                                        @change="addFiles($event.target.files); $event.target.value = ''">
+                                    
+                                    <div @click="$refs.salidaInput.click()" class="border-2 border-dashed border-gray-300 hover:border-blue-400 bg-white rounded-xl p-3.5 text-center cursor-pointer transition">
+                                        <div class="flex items-center justify-center gap-2 text-xs font-semibold text-blue-600">
+                                            <i class="ph ph-upload-simple text-base"></i>
+                                            <span>Seleccionar archivos de respuesta...</span>
+                                        </div>
+                                        <p class="text-[10px] text-gray-400 mt-0.5">PDF, Word, Excel, Imágenes, ZIP (hasta 25 MB c/u)</p>
+                                    </div>
+
+                                    <!-- Lista de archivos seleccionados para salida -->
+                                    <template x-if="salidaFiles.length > 0">
+                                        <div class="mt-2.5 space-y-1.5">
+                                            <div class="text-[11px] font-semibold text-gray-600 flex justify-between">
+                                                <span x-text="salidaFiles.length + ' archivo(s) listo(s)'"></span>
+                                                <button type="button" @click="salidaFiles = []; sync()" class="text-red-500 hover:underline">Limpiar</button>
+                                            </div>
+                                            <div class="max-h-36 overflow-y-auto space-y-1 pr-1">
+                                                <template x-for="(f, i) in salidaFiles" :key="f.name + '-' + f.size">
+                                                    <div class="flex items-center justify-between p-2 bg-blue-50/50 border border-blue-100 rounded-lg text-xs">
+                                                        <div class="min-w-0 flex-1 pr-2">
+                                                            <p class="font-medium text-gray-800 truncate" x-text="f.name"></p>
+                                                            <span class="text-[10px] text-gray-400" x-text="formatBytes(f.size)"></span>
+                                                        </div>
+                                                        <button type="button" @click="removeFile(i)" class="text-gray-400 hover:text-red-500 p-0.5">
+                                                            <i class="ph-bold ph-x"></i>
+                                                        </button>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
 
                                 <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-xl shadow-md hover:bg-blue-700 flex items-center justify-center gap-2 transition">
                                     <i class="ph ph-check-circle text-lg"></i> Marcar como Completado

@@ -47,9 +47,10 @@ class RadicadoPublicController extends Controller
             $path = $request->file('archivo_salida')->store('radicados/salidas', 'local');
             $nombre = $request->file('archivo_salida')->getClientOriginalName();
 
-            $radicado->update([
-                'archivo_salida_path' => $path,
-                'archivo_salida_nombre' => $nombre,
+            $radicado->adjuntos()->create([
+                'tipo' => 'salida',
+                'path' => $path,
+                'nombre_original' => $nombre,
             ]);
 
 

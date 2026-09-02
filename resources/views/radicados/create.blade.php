@@ -188,19 +188,140 @@
                         </div>
 
                         <!-- Documentos Adjuntos Iniciales (Entrada) -->
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">Documento(s) Inicial(es) / Entrada (Opcional)</label>
-                            <div class="border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-2xl p-6 text-center bg-gray-50/60 transition group cursor-pointer" onclick="document.getElementById('archivos_entrada').click()">
-                                <div class="flex flex-col items-center justify-center">
-                                    <div class="w-12 h-12 rounded-2xl bg-blue-100/70 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 transition">
-                                        <i class="ph ph-files text-2xl"></i>
+                        <div class="md:col-span-2" x-data="{
+                            files: [],
+                            isDragging: false,
+                            addFiles(fileList) {
+                                const currentKeys = this.files.map(f => f.name + '-' + f.size);
+                                for (let i = 0; i < fileList.length; i++) {
+                                    const file = fileList[i];
+                                    if (!currentKeys.includes(file.name + '-' + file.size)) {
+                                        this.files.push(file);
+                                    }
+                                }
+                                this.syncInput();
+                            },
+                            removeFile(index) {
+                                this.files.splice(index, 1);
+                                this.syncInput();
+                            },
+                            clearAll() {
+                                this.files = [];
+                                this.syncInput();
+                            },
+                            syncInput() {
+                                const dt = new DataTransfer();
+                                this.files.forEach(f => dt.items.add(f));
+                                this.$refs.fileInput.files = dt.files;
+                            },
+                            formatBytes(bytes) {
+                                if (!bytes || bytes === 0) return '0 B';
+                                const k = 1024;
+                                const sizes = ['B', 'KB', 'MB', 'GB'];
+                                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                                return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+                            },
+                            getTotalSize() {
+                                const total = this.files.reduce((acc, f) => acc + f.size, 0);
+                                return this.formatBytes(total);
+                            },
+                            getFileExt(name) {
+                                return name.split('.').pop().toUpperCase();
+                            },
+                            getFileTheme(name) {
+                                const ext = name.split('.').pop().toLowerCase();
+                                if (ext === 'pdf') return { icon: 'ph-file-pdf', color: 'text-red-600 bg-red-50 border-red-200' };
+                                if (['doc', 'docx'].includes(ext)) return { icon: 'ph-file-doc', color: 'text-blue-600 bg-blue-50 border-blue-200' };
+                                if (['xls', 'xlsx', 'csv'].includes(ext)) return { icon: 'ph-file-xls', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
+                                if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return { icon: 'ph-file-image', color: 'text-indigo-600 bg-indigo-50 border-indigo-200' };
+                                if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return { icon: 'ph-file-zip', color: 'text-amber-600 bg-amber-50 border-amber-200' };
+                                return { icon: 'ph-file-text', color: 'text-slate-600 bg-slate-50 border-slate-200' };
+                            }
+                        }">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-semibold text-gray-700">
+                                    Documento(s) Inicial(es) / Entrada (Opcional)
+                                </label>
+                                <template x-if="files.length > 0">
+                                    <span class="text-xs font-medium text-gray-500">
+                                        <span class="font-bold text-blue-600" x-text="files.length"></span> archivo(s) seleccionado(s) 
+                                        (<span x-text="getTotalSize()"></span>)
+                                    </span>
+                                </template>
+                            </div>
+
+                            <!-- Dropzone interactiva -->
+                            <div 
+                                @dragover.prevent="isDragging = true"
+                                @dragleave.prevent="isDragging = false"
+                                @drop.prevent="isDragging = false; addFiles($event.dataTransfer.files)"
+                                @click="$refs.fileInput.click()"
+                                :class="isDragging ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-400/30' : 'border-gray-300 hover:border-blue-400 bg-gray-50/60'"
+                                class="border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer group relative">
+                                
+                                <input 
+                                    x-ref="fileInput" 
+                                    id="archivos_entrada" 
+                                    type="file" 
+                                    name="archivos_entrada[]" 
+                                    multiple 
+                                    class="hidden" 
+                                    @change="addFiles($event.target.files); $event.target.value = ''">
+                                
+                                <div class="flex flex-col items-center justify-center pointer-events-none">
+                                    <div class="w-12 h-12 rounded-2xl bg-blue-100/80 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                        <i class="ph ph-upload-simple text-2xl"></i>
                                     </div>
-                                    <p class="text-sm font-semibold text-gray-800 mb-1">Haz clic para seleccionar o arrastra los archivos aquí</p>
-                                    <p class="text-xs text-gray-500">Puedes seleccionar múltiples archivos (PDF, Word, Excel, Imágenes, ZIP)</p>
-                                    <input id="archivos_entrada" type="file" name="archivos_entrada[]" multiple class="hidden" onchange="const count = this.files.length; document.getElementById('selected-filename').textContent = count > 0 ? count + ' archivo(s) seleccionado(s)' : '';">
-                                    <span id="selected-filename" class="text-xs font-bold text-blue-600 mt-2"></span>
+                                    <p class="text-sm font-semibold text-gray-800 mb-1">
+                                        Haz clic para seleccionar o arrastra los archivos aquí
+                                    </p>
+                                    <p class="text-xs text-gray-500">
+                                        Soporta múltiples archivos: PDF, Word, Excel, Imágenes, ZIP (hasta 25 MB c/u)
+                                    </p>
                                 </div>
                             </div>
+
+                            <!-- Lista de archivos seleccionados -->
+                            <template x-if="files.length > 0">
+                                <div class="mt-4 space-y-3">
+                                    <div class="flex items-center justify-between text-xs text-gray-500 border-b border-gray-100 pb-2">
+                                        <span class="font-semibold text-gray-700 flex items-center gap-1.5">
+                                            <i class="ph ph-files text-blue-600 text-sm"></i>
+                                            Archivos listos para subir (<span x-text="files.length"></span>)
+                                        </span>
+                                        <button type="button" @click="clearAll()" class="text-red-500 hover:text-red-700 font-medium hover:underline flex items-center gap-1">
+                                            <i class="ph ph-trash text-xs"></i> Limpiar todos
+                                        </button>
+                                    </div>
+
+                                    <!-- Grid responsivo para 1, 2 o 10 archivos -->
+                                    <div :class="files.length > 4 ? 'max-h-72 overflow-y-auto pr-1' : ''" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                        <template x-for="(file, index) in files" :key="file.name + '-' + file.size">
+                                            <div class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-blue-300 hover:shadow transition group">
+                                                <div class="flex items-center gap-3 min-w-0 pr-2">
+                                                    <div :class="getFileTheme(file.name).color" class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border font-bold text-lg">
+                                                        <i :class="'ph ' + getFileTheme(file.name).icon"></i>
+                                                    </div>
+                                                    <div class="min-w-0 flex-1">
+                                                        <p class="text-xs font-medium text-gray-900 truncate" x-text="file.name" :title="file.name"></p>
+                                                        <div class="flex items-center gap-2 mt-0.5">
+                                                            <span class="text-[10px] font-semibold uppercase px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded" x-text="getFileExt(file.name)"></span>
+                                                            <span class="text-[11px] text-gray-400" x-text="formatBytes(file.size)"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    type="button" 
+                                                    @click="removeFile(index)" 
+                                                    class="text-gray-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition flex-shrink-0"
+                                                    title="Quitar archivo">
+                                                    <i class="ph-bold ph-x text-sm"></i>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
 
                     </div>

@@ -58,13 +58,20 @@ class NuevaRadicacionMail extends Mailable implements ShouldQueue
     public function attachments(): array
     {
         $attachments = [];
+        $totalSize = 0;
+        $maxTotalSize = 15 * 1024 * 1024; // 15MB límite para correos
 
-        if ($this->radicado->adjuntos()->where('tipo', 'entrada')->exists()) {
-            foreach ($this->radicado->adjuntos()->where('tipo', 'entrada')->get() as $adjunto) {
-                $path = storage_path('app/private/' . $adjunto->path);
-                if (file_exists($path)) {
-                    $attachments[] = Attachment::fromPath($path)
-                        ->as($adjunto->nombre_original);
+        $adjuntosEntrada = $this->radicado->adjuntos()->where('tipo', 'entrada')->get();
+
+        foreach ($adjuntosEntrada as $adjunto) {
+            if ($adjunto->path && \Illuminate\Support\Facades\Storage::disk('local')->exists($adjunto->path)) {
+                $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($adjunto->path);
+                $fileSize = file_exists($fullPath) ? filesize($fullPath) : 0;
+
+                if ($totalSize + $fileSize <= $maxTotalSize) {
+                    $attachments[] = Attachment::fromPath($fullPath)
+                        ->as($adjunto->nombre_original ?: basename($adjunto->path));
+                    $totalSize += $fileSize;
                 }
             }
         }

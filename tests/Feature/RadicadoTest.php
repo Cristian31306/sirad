@@ -81,7 +81,7 @@ class RadicadoTest extends TestCase
             'prioridad' => 'Alta',
             'observaciones' => 'Ninguna',
             'responsables' => [$this->responsable->id],
-            'archivo_entrada' => $archivo,
+            'archivos_entrada' => [$archivo],
         ];
 
         $response = $this->actingAs($this->secretaria)->post(route('radicados.store'), $data);
@@ -90,12 +90,13 @@ class RadicadoTest extends TestCase
         $this->assertDatabaseHas('radicados', [
             'numero_radicado' => 'RAD-2026-TEST-01',
             'remitente' => 'Juan Pérez',
-            'archivo_entrada_nombre' => 'solicitud_comunidad.pdf',
             'estado' => 'pendiente',
         ]);
 
         $radicado = Radicado::where('numero_radicado', 'RAD-2026-TEST-01')->first();
-        $storage->assertExists($radicado->archivo_entrada_path);
+        $this->assertCount(1, $radicado->adjuntos);
+        $this->assertEquals('solicitud_comunidad.pdf', $radicado->adjuntos->first()->nombre_original);
+        $storage->assertExists($radicado->adjuntos->first()->path);
 
         Mail::assertQueued(NuevaRadicacionMail::class);
     }
@@ -178,15 +179,16 @@ class RadicadoTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->secretaria)->patch(route('radicados.cierre', $radicado), [
-            'archivo_salida' => $archivoRespuesta,
+            'archivos_salida' => [$archivoRespuesta],
         ]);
 
         $response->assertRedirect(route('radicados.show', $radicado));
         $radicado->refresh();
         $this->assertEquals('completado', $radicado->estado);
         $this->assertNotNull($radicado->fecha_salida);
-        $this->assertEquals('oficio_respuesta.pdf', $radicado->archivo_salida_nombre);
-        $storage->assertExists($radicado->archivo_salida_path);
+        $this->assertCount(1, $radicado->adjuntos);
+        $this->assertEquals('oficio_respuesta.pdf', $radicado->adjuntos->first()->nombre_original);
+        $storage->assertExists($radicado->adjuntos->first()->path);
     }
 
     public function test_can_download_and_preview_attachments(): void
@@ -203,19 +205,27 @@ class RadicadoTest extends TestCase
             'asunto' => 'Test attachments',
             'medio' => 'Portal Web',
             'prioridad' => 'Media',
-            'archivo_entrada_path' => $path,
-            'archivo_entrada_nombre' => 'test_doc.pdf',
             'fecha_limite' => Carbon::today()->addDays(15)->toDateString(),
             'estado' => 'pendiente',
         ]);
 
+        $adjunto = $radicado->adjuntos()->create([
+            'tipo' => 'entrada',
+            'path' => $path,
+            'nombre_original' => 'test_doc.pdf',
+        ]);
+
         // 1. Descargar
-        $descargaResponse = $this->actingAs($this->secretaria)->get(route('radicados.archivo.descargar', [$radicado, 'entrada']));
+        $descargaResponse = $this->actingAs($this->secretaria)->get(route('radicados.archivo.descargar', $adjunto));
         $descargaResponse->assertStatus(200);
 
         // 2. Previsualizar
-        $verResponse = $this->actingAs($this->secretaria)->get(route('radicados.archivo.ver', [$radicado, 'entrada']));
+        $verResponse = $this->actingAs($this->secretaria)->get(route('radicados.archivo.ver', $adjunto));
         $verResponse->assertStatus(200);
+
+        // 3. Descargar todos (.zip)
+        $zipResponse = $this->actingAs($this->secretaria)->get(route('radicados.adjuntos.descargar-todos', $radicado));
+        $zipResponse->assertStatus(200);
     }
 
     public function test_can_anular_radicado_with_reason(): void
@@ -261,5 +271,59 @@ class RadicadoTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertStringContainsString('text/csv', strtolower($response->headers->get('Content-Type')));
+    }
+
+    public function test_can_upload_and_manage_multiple_attachments_and_download_zip(): void
+    {
+        $storage = Storage::fake('local');
+        Mail::fake();
+
+        $file1 = UploadedFile::fake()->create('documento_principal.pdf', 1024, 'application/pdf');
+        $file2 = UploadedFile::fake()->create('anexo_tecnico.docx', 512, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        $file3 = UploadedFile::fake()->create('presupuesto.xlsx', 256, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        $data = [
+            'numero_radicado' => 'RAD-MULTI-001',
+            'fecha_radicacion' => Carbon::today()->toDateString(),
+            'remitente' => 'Consorcio Vial',
+            'empresa' => 'Consorcio Vial 2026',
+            'tipo_tramite_id' => $this->tipoTramite->id,
+            'asunto' => 'Radicación con múltiples anexos',
+            'medio' => 'Correo Electrónico',
+            'prioridad' => 'Alta',
+            'observaciones' => 'Se anexan 3 documentos de entrada',
+            'responsables' => [$this->responsable->id],
+            'archivos_entrada' => [$file1, $file2, $file3],
+        ];
+
+        $response = $this->actingAs($this->secretaria)->post(route('radicados.store'), $data);
+        $response->assertRedirect(route('radicados.index'));
+
+        $radicado = Radicado::where('numero_radicado', 'RAD-MULTI-001')->first();
+        $this->assertNotNull($radicado);
+        $this->assertCount(3, $radicado->adjuntos);
+
+        $entradas = $radicado->adjuntos()->where('tipo', 'entrada')->get();
+        $this->assertCount(3, $entradas);
+        $this->assertTrue($entradas->pluck('nombre_original')->contains('documento_principal.pdf'));
+        $this->assertTrue($entradas->pluck('nombre_original')->contains('anexo_tecnico.docx'));
+        $this->assertTrue($entradas->pluck('nombre_original')->contains('presupuesto.xlsx'));
+
+        foreach ($entradas as $adj) {
+            $storage->assertExists($adj->path);
+        }
+
+        // Probar vista show con los 3 archivos
+        $showResponse = $this->actingAs($this->secretaria)->get(route('radicados.show', $radicado));
+        $showResponse->assertStatus(200);
+        $showResponse->assertSee('documento_principal.pdf');
+        $showResponse->assertSee('anexo_tecnico.docx');
+        $showResponse->assertSee('presupuesto.xlsx');
+        $showResponse->assertSee('Descargar todos (.ZIP)');
+
+        // Probar descarga de ZIP con los 3 archivos
+        $zipResponse = $this->actingAs($this->secretaria)->get(route('radicados.adjuntos.descargar-todos', $radicado));
+        $zipResponse->assertStatus(200);
+        $this->assertStringContainsString('application/zip', strtolower($zipResponse->headers->get('Content-Type')));
     }
 }
