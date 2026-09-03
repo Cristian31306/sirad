@@ -253,11 +253,20 @@ class RadicadoController extends Controller
             'archivos_salida.*.mimes' => 'Solo se permiten archivos en formato PDF, Word, Excel, Imágenes (JPG, PNG) o Comprimidos (ZIP, RAR, 7Z).',
         ]);
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($radicado, $request) {
-            $radicado->update([
-                'estado' => 'completado',
-                'fecha_salida' => Carbon::today()->toDateString(),
-            ]);
+        $marcarCompletado = $request->input('accion', 'completar') === 'completar';
+
+        // Si se eligió solo adjuntar sin completar, debe haber seleccionado al menos un archivo
+        if (!$marcarCompletado && !$request->hasFile('archivos_salida')) {
+            return back()->with('error', 'Debe seleccionar al menos un archivo para adjuntar.');
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($radicado, $request, $marcarCompletado) {
+            if ($marcarCompletado) {
+                $radicado->update([
+                    'estado' => 'completado',
+                    'fecha_salida' => Carbon::today()->toDateString(),
+                ]);
+            }
 
             if ($request->hasFile('archivos_salida')) {
                 foreach ($request->file('archivos_salida') as $file) {
@@ -273,7 +282,11 @@ class RadicadoController extends Controller
             }
         });
 
-        return redirect()->route('radicados.show', $radicado)->with('success', 'Trámite cerrado correctamente.');
+        $msg = $marcarCompletado 
+            ? 'Trámite completado y cerrado correctamente.' 
+            : 'Documento(s) de respuesta guardado(s) exitosamente. El radicado continúa abierto.';
+
+        return redirect()->route('radicados.show', $radicado)->with('success', $msg);
     }
 
     public function descargarTodos(Radicado $radicado, ?string $tipo = null)

@@ -418,4 +418,63 @@ class RadicadoTest extends TestCase
         // 3. El radicado sigue intacto en BD
         $this->assertDatabaseHas('radicados', ['id' => $radicado->id]);
     }
+
+    public function test_user_or_admin_can_upload_response_files_without_marking_completed_from_portal(): void
+    {
+        $storage = Storage::fake('local');
+
+        $radicado = Radicado::create([
+            'numero_radicado' => 'RAD-PORTAL-01',
+            'fecha_radicacion' => Carbon::today()->toDateString(),
+            'remitente' => 'Remitente Test',
+            'tipo_tramite_id' => $this->tipoTramite->id,
+            'asunto' => 'Prueba subida sin completar',
+            'medio' => 'Físico',
+            'prioridad' => 'Media',
+            'fecha_limite' => Carbon::today()->addDays(15)->toDateString(),
+            'estado' => 'pendiente',
+        ]);
+
+        $archivo1 = UploadedFile::fake()->create('oficio_parcial.pdf', 1024, 'application/pdf');
+
+        // Subir archivo seleccionando accion => 'adjuntar' (sin completar)
+        $response = $this->actingAs($this->secretaria)->patch(route('radicados.cierre', $radicado), [
+            'accion' => 'adjuntar',
+            'archivos_salida' => [$archivo1],
+        ]);
+
+        $response->assertRedirect(route('radicados.show', $radicado));
+        $response->assertSessionHas('success');
+
+        $radicado->refresh();
+        $this->assertEquals('pendiente', $radicado->estado);
+        $this->assertNull($radicado->fecha_salida);
+        $this->assertCount(1, $radicado->adjuntos()->where('tipo', 'salida')->get());
+
+        // Luego se decide completar formalmente
+        $responseCompletar = $this->actingAs($this->secretaria)->patch(route('radicados.cierre', $radicado), [
+            'accion' => 'completar',
+        ]);
+
+        $responseCompletar->assertRedirect(route('radicados.show', $radicado));
+        $radicado->refresh();
+        $this->assertEquals('completado', $radicado->estado);
+        $this->assertNotNull($radicado->fecha_salida);
+    }
+
+    public function test_validation_error_shows_spanish_message_for_responsables(): void
+    {
+        $response = $this->actingAs($this->secretaria)->post(route('radicados.store'), [
+            'numero_radicado' => 'RAD-ERR-01',
+            'fecha_radicacion' => Carbon::today()->toDateString(),
+            'remitente' => 'Test',
+            'tipo_tramite_id' => $this->tipoTramite->id,
+            'asunto' => 'Falta responsable',
+            'medio' => 'Físico',
+            'prioridad' => 'Media',
+            // Omitimos 'responsables'
+        ]);
+
+        $response->assertSessionHasErrors(['responsables' => 'Debe seleccionar al menos un funcionario responsable.']);
+    }
 }

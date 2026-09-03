@@ -5,21 +5,6 @@
         </h2>
         <p class="text-gray-500 text-sm mt-1">Complete la información para radicar un nuevo trámite.</p>
     </div>
-
-    @if ($errors->any())
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl relative mb-6 flex items-start gap-3" role="alert">
-            <i class="ph ph-warning-circle text-xl text-red-500 mt-0.5"></i>
-            <div>
-                <strong class="font-bold block mb-1">Por favor corrige los siguientes errores:</strong>
-                <ul class="list-disc list-inside text-sm">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        </div>
-    @endif
-
     <form action="{{ route('radicados.store') }}" method="POST" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         @csrf
         

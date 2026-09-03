@@ -740,9 +740,17 @@
                                     </template>
                                 </div>
 
-                                <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2.5 rounded-xl shadow-md hover:bg-blue-700 flex items-center justify-center gap-2 transition">
-                                    <i class="ph ph-check-circle text-lg"></i> Marcar como Completado
-                                </button>
+                                 <div class="flex flex-col sm:flex-row items-center gap-2.5">
+                                    <button type="submit" name="accion" value="adjuntar" :disabled="salidaFiles.length === 0" class="w-full sm:flex-1 bg-white border border-blue-600 text-blue-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed font-semibold py-2.5 px-3 rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition text-xs">
+                                        <i class="ph ph-upload-simple text-base"></i>
+                                        <span>Guardar Archivos (Sin Cerrar)</span>
+                                    </button>
+
+                                    <button type="submit" name="accion" value="completar" class="w-full sm:flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-3 rounded-xl shadow-md flex items-center justify-center gap-1.5 transition text-xs">
+                                        <i class="ph ph-check-circle text-base"></i>
+                                        <span>Cerrar y Completar</span>
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     @else
@@ -764,6 +772,28 @@
                                 @endforeach
                             </div>
                         @endif
+
+                        @can('radicados.completar')
+                        <div class="mt-4 pt-4 border-t border-green-200/70 text-left" x-data="{ openAdjuntar: false }">
+                            <button type="button" @click="openAdjuntar = !openAdjuntar" class="text-xs font-bold text-green-800 hover:text-green-950 flex items-center gap-1.5 mx-auto">
+                                <i class="ph ph-plus-circle text-base"></i>
+                                <span x-text="openAdjuntar ? 'Ocultar formulario' : 'Adjuntar documentos adicionales a este trámite'"></span>
+                            </button>
+
+                            <div x-show="openAdjuntar" x-cloak class="mt-3 bg-white p-3.5 rounded-xl border border-green-200 shadow-xs">
+                                <form action="{{ route('radicados.cierre', $radicado) }}" method="POST" enctype="multipart/form-data">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="accion" value="adjuntar">
+                                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Seleccionar archivos de soporte:</label>
+                                    <input type="file" name="archivos_salida[]" multiple class="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 mb-3" required>
+                                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 rounded-lg text-xs transition shadow-xs">
+                                        Subir Archivos Adicionales
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        @endcan
                     </div>
                 @endif
             </div>

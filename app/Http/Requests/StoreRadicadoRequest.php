@@ -47,6 +47,18 @@ class StoreRadicadoRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'numero_radicado.required' => 'El número de radicado es obligatorio.',
+            'numero_radicado.unique' => 'Este número de radicado ya ha sido registrado previamente.',
+            'fecha_radicacion.required' => 'La fecha de radicación es obligatoria.',
+            'fecha_radicacion.before_or_equal' => 'La fecha de radicación no puede ser una fecha futura.',
+            'remitente.required' => 'El nombre del remitente es obligatorio.',
+            'tipo_tramite_id.required' => 'Debe seleccionar un tipo de trámite.',
+            'tipo_tramite_id.exists' => 'El tipo de trámite seleccionado no es válido.',
+            'asunto.required' => 'El asunto del radicado es obligatorio.',
+            'medio.required' => 'Debe seleccionar el medio de recepción.',
+            'prioridad.required' => 'Debe seleccionar la prioridad del trámite.',
+            'responsables.required' => 'Debe seleccionar al menos un funcionario responsable.',
+            'responsables.min' => 'Debe seleccionar al menos un funcionario responsable.',
             'archivos_entrada.max' => 'No puedes subir más de 20 archivos al mismo tiempo.',
             'archivos_entrada.*.max' => 'Cada archivo no puede superar los 25 MB.',
             'archivos_entrada.*.mimes' => 'Solo se permiten archivos en formato PDF, Word, Excel, Imágenes (JPG, PNG) o Comprimidos (ZIP, RAR, 7Z).',

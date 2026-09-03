@@ -76,6 +76,16 @@
     </script>
 @endif
 
+@if($errors->any())
+    <script>
+        document.addEventListener('alpine:init', () => {
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: @json($errors->first()), type: 'error' } }));
+            }, 100);
+        });
+    </script>
+@endif
+
 <style>
     @keyframes shrink {
         from { width: 100%; }
