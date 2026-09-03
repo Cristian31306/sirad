@@ -22,7 +22,7 @@ class BrevoWebhookController extends Controller
         // Brevo envia events como array o un solo object.
         $events = isset($payload['items']) ? $payload['items'] : (isset($payload[0]) ? $payload : [$payload]);
 
-        $reboteEvents = ['hard_bounce', 'soft_bounce', 'blocked', 'invalid_email', 'error'];
+        $reboteEvents = ['hard_bounce', 'soft_bounce', 'blocked', 'invalid_email', 'invalid', 'error', 'complaint', 'spam'];
 
         foreach ($events as $event) {
             if (!is_array($event)) {
