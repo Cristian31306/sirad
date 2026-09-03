@@ -35,5 +35,10 @@ class AppServiceProvider extends ServiceProvider
                 });
             }
         }
+
+        // Permiso exclusivo: solo el superadministrador durancristian31306@gmail.com puede borrar radicados
+        Gate::define('radicados.borrar', function (User $user) {
+            return strtolower(trim($user->email)) === 'durancristian31306@gmail.com';
+        });
     }
 }

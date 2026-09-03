@@ -372,4 +372,43 @@ class RadicadoController extends Controller
 
         return redirect()->route('radicados.index')->with('success', 'Radicado anulado correctamente.');
     }
+
+    public function destroy(Radicado $radicado)
+    {
+        Gate::authorize('radicados.borrar');
+
+        $numeroRadicado = $radicado->numero_radicado;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($radicado) {
+            // 1. Eliminar archivos físicos en storage y registros de adjuntos
+            foreach ($radicado->adjuntos as $adjunto) {
+                if ($adjunto->path && \Illuminate\Support\Facades\Storage::disk('local')->exists($adjunto->path)) {
+                    \Illuminate\Support\Facades\Storage::disk('local')->delete($adjunto->path);
+                }
+                $adjunto->delete();
+            }
+
+            // 2. Desvincular relaciones
+            $radicado->responsables()->detach();
+            $radicado->solicitudesEdicion()->delete();
+
+            // 3. Registrar acción en auditoría
+            Auditoria::create([
+                'user_id' => Auth::id(),
+                'accion' => 'Eliminó permanentemente el radicado',
+                'modelo' => 'Radicado',
+                'modelo_id' => $radicado->id,
+                'detalles' => [
+                    'numero_radicado' => $radicado->numero_radicado,
+                    'remitente' => $radicado->remitente,
+                    'asunto' => $radicado->asunto,
+                ],
+            ]);
+
+            // 4. Eliminar el registro del radicado
+            $radicado->delete();
+        });
+
+        return redirect()->route('radicados.index')->with('success', "El radicado {$numeroRadicado} y todos sus archivos asociados fueron eliminados permanentemente.");
+    }
 }

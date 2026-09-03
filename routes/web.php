@@ -22,7 +22,8 @@ Route::middleware(['auth', 'verified', 'force_password'])->group(function () {
     Route::resource('users', UserController::class)->except(['show'])->middleware('can:usuarios.gestionar');
 
     Route::get('radicados/export', [RadicadoController::class, 'export'])->name('radicados.export');
-    Route::resource('radicados', RadicadoController::class);
+    Route::delete('radicados/{radicado}', [RadicadoController::class, 'destroy'])->name('radicados.destroy')->middleware('can:radicados.borrar');
+    Route::resource('radicados', RadicadoController::class)->except(['destroy']);
     Route::patch('radicados/{radicado}/anular', [RadicadoController::class, 'anular'])->name('radicados.anular');
     Route::patch('radicados/{radicado}/cierre', [RadicadoController::class, 'updateCierre'])->name('radicados.cierre');
     Route::get('adjuntos/{adjunto}/descargar', [RadicadoController::class, 'downloadArchivo'])->name('radicados.archivo.descargar');

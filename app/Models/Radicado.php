@@ -65,4 +65,9 @@ class Radicado extends Model
     {
         return $this->hasMany(RadicadoAdjunto::class, 'radicado_id');
     }
+
+    public function solicitudesEdicion()
+    {
+        return $this->hasMany(SolicitudEdicion::class, 'radicado_id');
+    }
 }

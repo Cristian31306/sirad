@@ -326,4 +326,96 @@ class RadicadoTest extends TestCase
         $zipResponse->assertStatus(200);
         $this->assertStringContainsString('application/zip', strtolower($zipResponse->headers->get('Content-Type')));
     }
+
+    public function test_only_durancristian31306_can_delete_radicados(): void
+    {
+        $storage = Storage::fake('local');
+
+        $superAdmin = User::factory()->create([
+            'email' => 'durancristian31306@gmail.com',
+            'role' => 'admin',
+        ]);
+
+        $radicado = Radicado::create([
+            'numero_radicado' => 'RAD-DELETE-ME',
+            'fecha_radicacion' => Carbon::today()->toDateString(),
+            'remitente' => 'Usuario Para Borrar',
+            'tipo_tramite_id' => $this->tipoTramite->id,
+            'asunto' => 'Radicado a borrar',
+            'medio' => 'Físico',
+            'prioridad' => 'Media',
+            'fecha_limite' => Carbon::today()->addDays(15)->toDateString(),
+            'estado' => 'pendiente',
+        ]);
+
+        $radicado->responsables()->attach($this->responsable->id);
+
+        $path = 'radicados/entradas/doc_delete.pdf';
+        $storage->put($path, 'sample file');
+        $radicado->adjuntos()->create([
+            'tipo' => 'entrada',
+            'path' => $path,
+            'nombre_original' => 'doc_delete.pdf',
+        ]);
+
+        // 1. El superadmin puede ver el botón de borrar
+        $showResponse = $this->actingAs($superAdmin)->get(route('radicados.show', $radicado));
+        $showResponse->assertStatus(200);
+        $showResponse->assertSee('Borrar Radicado');
+
+        // 2. El superadmin puede ejecutar la eliminación
+        $deleteResponse = $this->actingAs($superAdmin)->delete(route('radicados.destroy', $radicado));
+        $deleteResponse->assertRedirect(route('radicados.index'));
+
+        // 3. El radicado ya no existe en BD
+        $this->assertDatabaseMissing('radicados', ['id' => $radicado->id]);
+        $this->assertDatabaseMissing('radicado_adjuntos', ['radicado_id' => $radicado->id]);
+        $storage->assertMissing($path);
+
+        // 4. Se registró en auditoría
+        $this->assertDatabaseHas('auditorias', [
+            'accion' => 'Eliminó permanentemente el radicado',
+            'modelo' => 'Radicado',
+            'modelo_id' => $radicado->id,
+        ]);
+    }
+
+    public function test_other_users_and_other_admins_cannot_delete_radicados(): void
+    {
+        $otherAdmin = User::factory()->create([
+            'email' => 'otro_admin@sirad.gov.co',
+            'role' => 'admin',
+        ]);
+
+        $radicado = Radicado::create([
+            'numero_radicado' => 'RAD-PROTECTED',
+            'fecha_radicacion' => Carbon::today()->toDateString(),
+            'remitente' => 'Usuario Protegido',
+            'tipo_tramite_id' => $this->tipoTramite->id,
+            'asunto' => 'Radicado protegido contra borrado',
+            'medio' => 'Físico',
+            'prioridad' => 'Media',
+            'fecha_limite' => Carbon::today()->addDays(15)->toDateString(),
+            'estado' => 'pendiente',
+        ]);
+
+        // 1. Secretaria no ve el botón y recibe 403
+        $showResponseSecretaria = $this->actingAs($this->secretaria)->get(route('radicados.show', $radicado));
+        $showResponseSecretaria->assertStatus(200);
+        $showResponseSecretaria->assertDontSee('Borrar Radicado');
+
+        $deleteResponseSecretaria = $this->actingAs($this->secretaria)->delete(route('radicados.destroy', $radicado));
+        $deleteResponseSecretaria->assertStatus(403);
+
+        // 2. Otro administrador tampoco ve el botón y recibe 403
+        $showResponseAdmin = $this->actingAs($otherAdmin)->get(route('radicados.show', $radicado));
+        $showResponseAdmin->assertStatus(200);
+        $showResponseAdmin->assertDontSee('Borrar Radicado');
+
+        $deleteResponseAdmin = $this->actingAs($otherAdmin)->delete(route('radicados.destroy', $radicado));
+        $deleteResponseAdmin->assertStatus(403);
+
+        // 3. El radicado sigue intacto en BD
+        $this->assertDatabaseHas('radicados', ['id' => $radicado->id]);
+    }
 }

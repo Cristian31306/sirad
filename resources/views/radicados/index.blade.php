@@ -298,6 +298,15 @@
                                 <a href="{{ route('radicados.show', $radicado) }}" class="text-blue-600 hover:text-blue-900 transition" title="Ver Expediente">
                                     <i class="ph ph-eye text-lg"></i>
                                 </a>
+                                @can('radicados.borrar')
+                                <form action="{{ route('radicados.destroy', $radicado) }}" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de que deseas ELIMINAR PERMANENTEMENTE el radicado {{ $radicado->numero_radicado }}? Esta acción no se puede deshacer y borrará todos sus archivos.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-500 hover:text-red-700 transition" title="Eliminar definitivamente este radicado">
+                                        <i class="ph ph-trash text-lg"></i>
+                                    </button>
+                                </form>
+                                @endcan
                             </td>
                         </tr>
                     @empty

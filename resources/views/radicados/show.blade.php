@@ -5,7 +5,7 @@
             <span class="text-gray-300">/</span>
             <span class="text-gray-500 text-sm font-medium">{{ $radicado->numero_radicado }}</span>
         </div>
-        <div class="flex justify-between items-center mt-2" x-data="{ showEditModal: false, showAnularModal: false }">
+        <div class="flex justify-between items-center mt-2" x-data="{ showEditModal: false, showAnularModal: false, showDeleteModal: false }">
             <div class="flex items-center gap-4">
                 <h2 class="font-bold text-3xl text-gray-900 tracking-tight">
                     Radicado <span class="text-gray-500 font-normal">{{ $radicado->numero_radicado }}</span>
@@ -48,10 +48,17 @@
                 @can('radicados.anular')
                 @if(in_array($radicado->estado, ['pendiente', 'alerta', 'vencido']))
                 <button @click="showAnularModal = true" class="bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 font-semibold py-1.5 px-3 text-sm rounded-lg shadow-sm flex items-center gap-2 transition-all">
-                    <i class="ph ph-trash"></i> 
+                    <i class="ph ph-prohibit"></i> 
                     Anular
                 </button>
                 @endif
+                @endcan
+
+                @can('radicados.borrar')
+                <button @click="showDeleteModal = true" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-1.5 px-3 text-sm rounded-lg shadow-sm flex items-center gap-2 transition-all" title="Eliminar definitivamente este radicado (Exclusivo Superadmin)">
+                    <i class="ph ph-trash"></i> 
+                    Borrar Radicado
+                </button>
                 @endcan
             </div>
 
@@ -238,6 +245,49 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Modal Eliminar Radicado Permanentemente -->
+            @can('radicados.borrar')
+            <div x-show="showDeleteModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title-delete" role="dialog" aria-modal="true">
+                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    <div x-show="showDeleteModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showDeleteModal = false" aria-hidden="true"></div>
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                    <div x-show="showDeleteModal" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                        <div class="p-6">
+                            <div class="flex items-center gap-3 text-red-600 mb-4">
+                                <div class="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-red-600">
+                                    <i class="ph ph-trash text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg leading-6 font-bold text-gray-900" id="modal-title-delete">Eliminar Radicado Permanentemente</h3>
+                                    <span class="text-xs text-red-600 font-semibold uppercase tracking-wider">Acción Exclusiva de Superadministrador</span>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-4">
+                                ¿Estás seguro de que deseas eliminar permanentemente el radicado <strong class="text-gray-900">{{ $radicado->numero_radicado }}</strong>?
+                            </p>
+                            <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 mb-5 leading-relaxed">
+                                <i class="ph ph-warning-circle text-base align-middle mr-1"></i>
+                                <strong>Advertencia:</strong> Esta acción borrará de la base de datos el radicado, desvinculará a los responsables y eliminará definitivamente todos sus archivos adjuntos en el servidor. <u>Esta acción no se puede deshacer.</u>
+                            </div>
+                            
+                            <form action="{{ route('radicados.destroy', $radicado) }}" method="POST">
+                                @csrf
+                                @method('DELETE')
+                                <div class="mt-5 sm:mt-6 flex flex-col sm:flex-row-reverse gap-3">
+                                    <button type="submit" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-md shadow-red-500/30 flex items-center justify-center gap-2 transition whitespace-nowrap">
+                                        <i class="ph ph-trash"></i> Sí, Eliminar Radicado
+                                    </button>
+                                    <button type="button" @click="showDeleteModal = false" class="w-full sm:w-auto inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-6 py-2.5 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:text-sm">
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endcan
 
         </div>
     </div>
