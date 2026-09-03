@@ -22,12 +22,16 @@ class Radicado extends Model
         'medio',
         'prioridad',
         'observaciones',
+        'estado_respuesta',
+        'respuesta_marcada_por',
+        'fecha_respuesta_marcada',
     ];
 
     protected $casts = [
         'fecha_radicacion' => 'date',
         'fecha_limite' => 'date',
         'fecha_salida' => 'date',
+        'fecha_respuesta_marcada' => 'datetime',
     ];
 
     public function hasArchivoEntrada(): bool
@@ -69,5 +73,15 @@ class Radicado extends Model
     public function solicitudesEdicion()
     {
         return $this->hasMany(SolicitudEdicion::class, 'radicado_id');
+    }
+
+    public function notas()
+    {
+        return $this->hasMany(RadicadoNota::class, 'radicado_id')->latest();
+    }
+
+    public function respuestaMarcadaPor()
+    {
+        return $this->belongsTo(Responsable::class, 'respuesta_marcada_por');
     }
 }

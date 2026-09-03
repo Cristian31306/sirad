@@ -16,12 +16,14 @@ class RespuestaSubidaNotification extends Notification implements ShouldQueue
     public $radicado;
     public $responsable;
     public $nombresArchivos;
+    public $nota;
 
-    public function __construct(Radicado $radicado, Responsable $responsable, array $nombresArchivos = [])
+    public function __construct(Radicado $radicado, Responsable $responsable, array $nombresArchivos = [], ?string $nota = null)
     {
         $this->radicado = $radicado;
         $this->responsable = $responsable;
         $this->nombresArchivos = $nombresArchivos;
+        $this->nota = $nota;
     }
 
     public function via(object $notifiable): array
@@ -32,10 +34,15 @@ class RespuestaSubidaNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $mail = (new MailMessage)
-            ->subject('Respuesta recibida - Radicado: ' . $this->radicado->numero_radicado)
+            ->subject('✅ Respuesta lista para revisión - Radicado: ' . $this->radicado->numero_radicado)
             ->greeting('Hola, ' . $notifiable->name)
-            ->line('El responsable **' . $this->responsable->nombre . '** ha subido documento(s) de respuesta para el radicado **' . $this->radicado->numero_radicado . '**.')
+            ->line('El responsable **' . $this->responsable->nombre . '** ha finalizado los documentos y ha marcado la respuesta del radicado **' . $this->radicado->numero_radicado . '** como **LISTA PARA REVISIÓN Y CIERRE**.')
             ->line('**Asunto del trámite:** ' . $this->radicado->asunto);
+
+        if (!empty($this->nota)) {
+            $mail->line('**Nota u observación del responsable:**');
+            $mail->line('"' . $this->nota . '"');
+        }
 
         if (!empty($this->nombresArchivos)) {
             $mail->line('**Archivos adjuntados:**');
@@ -45,8 +52,8 @@ class RespuestaSubidaNotification extends Notification implements ShouldQueue
         }
 
         return $mail
-            ->action('Revisar Radicado en SIRAD', route('radicados.show', $this->radicado))
-            ->line('El radicado permanece en estado **' . ucfirst($this->radicado->estado) . '** para que el equipo operativo revise la documentación y realice el cierre formal cuando corresponda.');
+            ->action('Revisar y Completar en SIRAD', route('radicados.show', $this->radicado))
+            ->line('Ya puedes ingresar a SIRAD a verificar los archivos y cerrar formalmente el trámite.');
     }
 
     public function toArray(object $notifiable): array
@@ -54,7 +61,8 @@ class RespuestaSubidaNotification extends Notification implements ShouldQueue
         return [
             'radicado_id' => $this->radicado->id,
             'numero_radicado' => $this->radicado->numero_radicado,
-            'mensaje' => 'El responsable ' . $this->responsable->nombre . ' subió documento(s) de respuesta.',
+            'mensaje' => 'El responsable ' . $this->responsable->nombre . ' marcó la respuesta como LISTA PARA REVISIÓN.',
+            'nota' => $this->nota,
             'archivos' => $this->nombresArchivos,
             'url' => route('radicados.show', $this->radicado),
         ];

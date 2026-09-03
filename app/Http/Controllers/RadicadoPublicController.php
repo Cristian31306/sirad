@@ -21,7 +21,13 @@ class RadicadoPublicController extends Controller
             abort(403, 'Enlace no válido o ha expirado.');
         }
 
-        $radicado->load(['adjuntos', 'tipoTramite', 'responsables']);
+        $radicado->load([
+            'adjuntos.responsable',
+            'tipoTramite',
+            'responsables',
+            'notas.responsable',
+            'respuestaMarcadaPor',
+        ]);
 
         // Solo si el radicado ya fue cerrado (completado) o anulado, mostrar vista de cierre
         if (in_array($radicado->estado, ['completado', 'anulado'])) {
@@ -42,24 +48,32 @@ class RadicadoPublicController extends Controller
         }
 
         $request->validate([
-            'archivos_salida' => 'required|array|min:1|max:20',
-            'archivos_salida.*' => 'required|file|max:25600|mimes:pdf,doc,docx,xls,xlsx,zip,rar,7z,jpg,jpeg,png',
+            'archivos_salida' => 'nullable|array|max:20',
+            'archivos_salida.*' => 'file|max:25600|mimes:pdf,doc,docx,xls,xlsx,zip,rar,7z,jpg,jpeg,png',
+            'nota' => 'nullable|string|max:3000',
+            'estado_entrega' => 'nullable|in:avance,finalizar',
         ], [
-            'archivos_salida.required' => 'Debe adjuntar al menos un archivo de respuesta.',
-            'archivos_salida.array' => 'El formato de envío de archivos no es válido.',
-            'archivos_salida.min' => 'Debe adjuntar al menos un archivo de respuesta.',
             'archivos_salida.max' => 'No puedes subir más de 20 archivos a la vez.',
-            'archivos_salida.*.required' => 'Cada archivo seleccionado debe ser válido.',
             'archivos_salida.*.max' => 'Cada archivo no puede superar los 25 MB.',
             'archivos_salida.*.mimes' => 'Formato no válido. Solo se permiten PDF, Word, Excel, Imágenes (JPG, PNG) o ZIP/RAR.',
+            'nota.max' => 'La nota no puede superar los 3000 caracteres.',
         ]);
 
-        $nombresArchivos = [];
+        $tieneArchivos = $request->hasFile('archivos_salida');
+        $tieneNota = !empty(trim($request->input('nota', '')));
 
-        DB::transaction(function () use ($radicado, $request, &$nombresArchivos) {
-            // NOTA: NO se marca como 'completado'. El radicado continúa en su estado actual (ej: pendiente).
-            // La finalización formal del trámite la realiza el usuario operativo en SIRAD al verificar la respuesta.
-            if ($request->hasFile('archivos_salida')) {
+        if (!$tieneArchivos && !$tieneNota) {
+            return back()->with('error', 'Debe adjuntar al menos un archivo o escribir una nota de avance.');
+        }
+
+        $nombresArchivos = [];
+        $notaTexto = $tieneNota ? trim($request->input('nota')) : null;
+        $estadoEntrega = $request->input('estado_entrega', 'finalizar');
+        $esFinalizar = $estadoEntrega === 'finalizar';
+
+        DB::transaction(function () use ($radicado, $responsable, $request, $tieneArchivos, $tieneNota, $notaTexto, $esFinalizar, &$nombresArchivos) {
+            // 1. Guardar archivos si vienen
+            if ($tieneArchivos) {
                 foreach ($request->file('archivos_salida') as $file) {
                     if ($file->isValid()) {
                         $path = $file->store('radicados/salidas', 'local');
@@ -70,23 +84,54 @@ class RadicadoPublicController extends Controller
                             'tipo' => 'salida',
                             'path' => $path,
                             'nombre_original' => $nombreOriginal,
+                            'responsable_id' => $responsable->id,
                         ]);
                     }
                 }
             }
+
+            // 2. Guardar nota en bitácora si viene
+            if ($tieneNota) {
+                $radicado->notas()->create([
+                    'responsable_id' => $responsable->id,
+                    'autor_nombre' => $responsable->nombre,
+                    'contenido' => $notaTexto,
+                ]);
+            }
+
+            // 3. Actualizar estado_respuesta
+            if ($esFinalizar) {
+                $radicado->update([
+                    'estado_respuesta' => 'lista_para_revision',
+                    'respuesta_marcada_por' => $responsable->id,
+                    'fecha_respuesta_marcada' => now(),
+                ]);
+            } else {
+                if ($radicado->estado_respuesta === 'sin_respuesta') {
+                    $radicado->update([
+                        'estado_respuesta' => 'en_tramite',
+                    ]);
+                }
+            }
         });
 
-        // Notificar a usuarios de SIRAD con rol 'usuario' (y fallback a 'admin' si no existen operarios)
-        $usuarios = User::where('role', 'usuario')->get();
-        if ($usuarios->isEmpty()) {
-            $usuarios = User::where('role', 'admin')->get();
+        // 4. Notificar a usuarios de SIRAD ÚNICAMENTE si se marcó como respuesta finalizada
+        if ($esFinalizar) {
+            $usuarios = User::where('role', 'usuario')->get();
+            if ($usuarios->isEmpty()) {
+                $usuarios = User::where('role', 'admin')->get();
+            }
+
+            if ($usuarios->isNotEmpty()) {
+                Notification::send($usuarios, new RespuestaSubidaNotification($radicado, $responsable, $nombresArchivos, $notaTexto));
+            }
+
+            $mensaje = '¡Respuesta registrada con éxito! Ha sido marcada como LISTA PARA REVISIÓN y el personal de correspondencia ya fue notificado para proceder con el cierre del radicado.';
+        } else {
+            $mensaje = 'Avance guardado exitosamente en la bitácora del radicado. El equipo y la entidad ya pueden visualizar los archivos y notas preliminares.';
         }
 
-        if ($usuarios->isNotEmpty()) {
-            Notification::send($usuarios, new RespuestaSubidaNotification($radicado, $responsable, $nombresArchivos));
-        }
-
-        return redirect($request->fullUrl())->with('success', 'Documento(s) de respuesta subido(s) correctamente. Puede continuar agregando más archivos si lo requiere mientras el trámite permanezca abierto.');
+        return redirect($request->fullUrl())->with('success', $mensaje);
     }
 
     public function downloadAdjunto(Request $request, Radicado $radicado, Responsable $responsable, RadicadoAdjunto $adjunto)
@@ -139,49 +184,43 @@ class RadicadoPublicController extends Controller
         if ($tipo && in_array($tipo, ['entrada', 'salida'])) {
             $query->where('tipo', $tipo);
         }
+
         $adjuntos = $query->get();
 
         if ($adjuntos->isEmpty()) {
-            return back()->with('error', 'No hay archivos para descargar.');
+            return back()->with('error', 'No hay archivos disponibles para descargar.');
         }
 
-        $zipFileName = 'radicado_' . str_replace(['/', '\\', ' '], '_', $radicado->numero_radicado) . ($tipo ? "_{$tipo}" : '') . '_adjuntos.zip';
-        $zipTempPath = tempnam(sys_get_temp_dir(), 'zip_');
+        $zipFileName = 'radicado_'.$radicado->numero_radicado.'_'.($tipo ?? 'adjuntos').'_'.time().'.zip';
+        $zipDirectory = storage_path('app/temp');
+        if (!file_exists($zipDirectory)) {
+            mkdir($zipDirectory, 0755, true);
+        }
+        $zipPath = $zipDirectory.'/'.$zipFileName;
 
         $zip = new ZipArchive();
-        if ($zip->open($zipTempPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            return back()->with('error', 'No se pudo generar el archivo comprimido.');
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            return back()->with('error', 'No se pudo generar el archivo ZIP comprimido.');
         }
 
-        $addedCount = 0;
-        $usedNames = [];
+        $nombresUsados = [];
         foreach ($adjuntos as $adjunto) {
-            if ($adjunto->path && Storage::disk('local')->exists($adjunto->path)) {
-                $fullPath = Storage::disk('local')->path($adjunto->path);
-                $originalName = $adjunto->nombre_original ?: basename($adjunto->path);
+            if (Storage::disk('local')->exists($adjunto->path)) {
+                $nombreArchivo = $adjunto->nombre_original ?: basename($adjunto->path);
 
-                if (isset($usedNames[$originalName])) {
-                    $usedNames[$originalName]++;
-                    $pathInfo = pathinfo($originalName);
-                    $nameInZip = $pathInfo['filename'] . " ({$usedNames[$originalName]})." . ($pathInfo['extension'] ?? '');
-                } else {
-                    $usedNames[$originalName] = 1;
-                    $nameInZip = $originalName;
+                if (in_array($nombreArchivo, $nombresUsados)) {
+                    $ext = pathinfo($nombreArchivo, PATHINFO_EXTENSION);
+                    $nameOnly = pathinfo($nombreArchivo, PATHINFO_FILENAME);
+                    $nombreArchivo = $nameOnly.'_'.uniqid().'.'.$ext;
                 }
+                $nombresUsados[] = $nombreArchivo;
 
-                $prefix = $tipo ? '' : (ucfirst($adjunto->tipo) . '/');
-                $zip->addFile($fullPath, $prefix . $nameInZip);
-                $addedCount++;
+                $zip->addFile(Storage::disk('local')->path($adjunto->path), $nombreArchivo);
             }
         }
 
         $zip->close();
 
-        if ($addedCount === 0) {
-            @unlink($zipTempPath);
-            return back()->with('error', 'Los archivos solicitados no se encontraron físicamente en el servidor.');
-        }
-
-        return response()->download($zipTempPath, $zipFileName)->deleteFileAfterSend(true);
+        return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
     }
 }

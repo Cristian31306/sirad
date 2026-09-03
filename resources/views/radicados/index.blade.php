@@ -254,10 +254,19 @@
                     @forelse($radicados as $radicado)
                         <tr class="hover:bg-blue-50/30 transition">
                             <td class="px-6 py-4 font-bold text-gray-900">
-                                <div class="flex items-center gap-1.5">
+                                <div class="flex items-center gap-1.5 flex-wrap">
                                     <span>{{ $radicado->numero_radicado }}</span>
                                     @if($radicado->hasArchivoEntrada() || $radicado->hasArchivoSalida())
                                         <i class="ph-bold ph-paperclip text-blue-600 text-sm" title="Contiene documento adjunto"></i>
+                                    @endif
+                                    @if($radicado->estado_respuesta === 'lista_para_revision')
+                                        <span class="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5" title="Respuesta lista para revisión según reporte del responsable">
+                                            <i class="ph-bold ph-check"></i> Respuesta Lista
+                                        </span>
+                                    @elseif($radicado->estado_respuesta === 'en_tramite')
+                                        <span class="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5" title="Los responsables están subiendo avances">
+                                            <i class="ph-bold ph-clock"></i> En Avance
+                                        </span>
                                     @endif
                                 </div>
                             </td>

@@ -352,6 +352,25 @@ class RadicadoController extends Controller
             ->with('success', "Notificación reenviada a {$responsable->nombre} ({$responsable->correo}).");
     }
 
+    public function storeNota(Request $request, Radicado $radicado)
+    {
+        $request->validate([
+            'contenido' => 'required|string|max:3000',
+        ], [
+            'contenido.required' => 'El texto de la nota u observación es obligatorio.',
+            'contenido.max' => 'La nota no puede exceder los 3000 caracteres.',
+        ]);
+
+        $radicado->notas()->create([
+            'user_id' => auth()->id(),
+            'autor_nombre' => auth()->user()->name,
+            'contenido' => trim($request->contenido),
+        ]);
+
+        return redirect()->route('radicados.show', $radicado)
+            ->with('success', 'Nota agregada a la bitácora del radicado exitosamente.');
+    }
+
     public function descargarTodos(Radicado $radicado, ?string $tipo = null)
     {
         $query = $radicado->adjuntos();

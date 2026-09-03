@@ -325,6 +325,39 @@
         </div>
     @endif
 
+    @if($radicado->estado !== 'completado' && $radicado->estado !== 'anulado')
+        @if($radicado->estado_respuesta === 'lista_para_revision')
+            <div class="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 sm:p-5 mb-6 shadow-xs flex flex-col sm:flex-row items-start justify-between gap-4">
+                <div class="flex items-start gap-3.5">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shrink-0">
+                        <i class="ph-bold ph-check-circle"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-emerald-950 text-sm flex items-center gap-2">
+                            <span>Respuesta Marcada como Lista para Revisión</span>
+                            <span class="text-[10px] uppercase font-extrabold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-md">Responsables</span>
+                        </h4>
+                        <p class="text-xs text-emerald-800 mt-1 leading-relaxed">
+                            El responsable <strong>{{ optional($radicado->respuestaMarcadaPor)->nombre ?? 'asignado' }}</strong> completó los documentos y marcó la respuesta como <strong>LISTA PARA REVISIÓN</strong> el {{ optional($radicado->fecha_respuesta_marcada)->format('d/m/Y H:i') }}. Ya puedes verificar los anexos y completar formalmente el radicado.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        @elseif($radicado->estado_respuesta === 'en_tramite')
+            <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-6 shadow-xs flex items-start gap-3.5">
+                <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shrink-0">
+                    <i class="ph-bold ph-clock"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-amber-950 text-xs">Respuesta en Trámite / Avances Preliminares</h4>
+                    <p class="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                        Los funcionarios responsables están cargando documentos o notas de avance para este radicado. El trámite permanece en proceso hasta que marquen la respuesta finalizada.
+                    </p>
+                </div>
+            </div>
+        @endif
+    @endif
+
     <div class="flex flex-col lg:flex-row gap-6">
         
         <!-- Left Column Wrapper -->
@@ -600,6 +633,10 @@
                                                 @if($info['size'])
                                                     <span class="text-[11px] text-gray-400">{{ $info['size'] }}</span>
                                                 @endif
+                                                <p class="text-[10px] text-gray-500 mt-1 flex items-center gap-1">
+                                                    <i class="ph ph-user text-gray-400"></i>
+                                                    <span>Subido por: <strong>{{ optional($salida->responsable)->nombre ?? 'Portal SIRAD' }}</strong></span>
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -628,6 +665,61 @@
                     @endif
                 </div>
             </div>
+        </div>
+
+        <!-- Bitácora de Notas y Avances de los Responsables -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+                <h3 class="font-bold text-gray-800 text-base flex items-center gap-2">
+                    <i class="ph ph-chats-circle text-blue-600 text-lg"></i>
+                    <span>Bitácora de Notas y Avances</span>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">
+                        {{ $radicado->notas->count() }}
+                    </span>
+                </h3>
+            </div>
+
+            <p class="text-xs text-gray-500 mb-4">
+                Observaciones y avances registrados por los responsables desde su enlace de respuesta o por el equipo de correspondencia.
+            </p>
+
+            <div class="space-y-3 max-h-72 overflow-y-auto pr-1">
+                @forelse($radicado->notas as $nota)
+                    <div class="p-3.5 rounded-xl border {{ $nota->responsable_id ? 'bg-blue-50/40 border-blue-100' : 'bg-gray-50 border-gray-200/80' }} text-xs">
+                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="font-bold text-gray-900">{{ $nota->autor_nombre }}</span>
+                                @if($nota->responsable_id)
+                                    <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">Responsable</span>
+                                @else
+                                    <span class="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-800">SIRAD</span>
+                                @endif
+                            </div>
+                            <span class="text-[11px] text-gray-400">{{ $nota->created_at->format('d/m/Y H:i') }}</span>
+                        </div>
+                        <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ $nota->contenido }}</p>
+                    </div>
+                @empty
+                    <div class="border border-dashed border-gray-200 rounded-xl p-5 text-center bg-gray-50/50">
+                        <i class="ph ph-chat-slash text-2xl text-gray-300 block mb-1"></i>
+                        <p class="text-xs text-gray-500 italic">No hay notas u observaciones registradas para este radicado.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            <!-- Formulario para que el usuario del portal también agregue notas -->
+            @if($radicado->estado !== 'anulado')
+                <form action="{{ route('radicados.notas.store', $radicado) }}" method="POST" class="mt-4 pt-3 border-t border-gray-100">
+                    @csrf
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Agregar una observación a la bitácora:</label>
+                    <div class="flex gap-2">
+                        <input type="text" name="contenido" placeholder="Escribe una observación interna o nota de seguimiento..." required class="flex-1 text-xs rounded-xl border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200">
+                        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shrink-0 transition shadow-xs cursor-pointer">
+                            Guardar Nota
+                        </button>
+                    </div>
+                </form>
+            @endif
         </div>
 
         </div> <!-- Fin de Left Column Wrapper -->
