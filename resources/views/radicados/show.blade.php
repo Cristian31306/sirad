@@ -35,7 +35,6 @@
             </div>
             
             <div class="flex items-center gap-3">
-                @if(in_array($radicado->estado, ['pendiente', 'alerta', 'vencido']))
                 <button @click="showEditModal = true" class="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold py-1.5 px-3 text-sm rounded-lg shadow-sm flex items-center gap-2 transition-all">
                     <i class="ph ph-pencil-simple"></i> 
                     @can('radicados.editar')
@@ -44,7 +43,6 @@
                         Solicitar Edición
                     @endcan
                 </button>
-                @endif
                 
                 @can('radicados.anular')
                 @if(in_array($radicado->estado, ['pendiente', 'alerta', 'vencido']))
@@ -96,6 +94,16 @@
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-1">Empresa / Entidad</label>
                                     <input type="text" name="empresa" value="{{ $radicado->empresa }}" class="w-full border-gray-300 rounded-xl">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Estado</label>
+                                    <select name="estado" class="w-full border-gray-300 rounded-xl" required>
+                                        <option value="pendiente" {{ $radicado->estado == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
+                                        <option value="alerta" {{ $radicado->estado == 'alerta' ? 'selected' : '' }}>Alerta</option>
+                                        <option value="vencido" {{ $radicado->estado == 'vencido' ? 'selected' : '' }}>Vencido</option>
+                                        <option value="completado" {{ $radicado->estado == 'completado' ? 'selected' : '' }}>Completado</option>
+                                        <option value="anulado" {{ $radicado->estado == 'anulado' ? 'selected' : '' }}>Anulado</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-1">Tipo de Trámite</label>

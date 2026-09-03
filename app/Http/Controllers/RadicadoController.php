@@ -221,6 +221,7 @@ class RadicadoController extends Controller
                 'asunto' => $request->asunto,
                 'observaciones' => $request->observaciones,
                 'fecha_limite' => $fechaLimite->toDateString(),
+                'estado' => $request->estado,
             ]);
 
             $radicado->responsables()->sync($request->responsables);

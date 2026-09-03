@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Auditoria;
 use App\Models\Radicado;
+use App\Models\Responsable;
 use App\Models\SolicitudEdicion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,7 +35,7 @@ class SolicitudEdicionController extends Controller
 
         $perPage = $request->get('per_page', 10);
         $solicitudes = $query->paginate($perPage)->withQueryString();
-        $responsables = \App\Models\Responsable::all()->keyBy('id');
+        $responsables = Responsable::all()->keyBy('id');
 
         return view('solicitudes.index', compact('solicitudes', 'sort', 'direction', 'responsables'));
     }
@@ -50,12 +51,13 @@ class SolicitudEdicionController extends Controller
             'observaciones' => 'nullable|string',
             'responsables' => 'required|array|min:1',
             'responsables.*' => 'exists:responsables,id',
+            'estado' => 'required|in:pendiente,completado,alerta,vencido,anulado',
         ]);
 
         $solicitud = SolicitudEdicion::create([
             'radicado_id' => $radicado->id,
             'user_id' => $request->user()->id,
-            'datos_propuestos' => $request->only(['empresa', 'asunto', 'medio', 'prioridad', 'observaciones', 'responsables']),
+            'datos_propuestos' => $request->only(['empresa', 'asunto', 'medio', 'prioridad', 'observaciones', 'responsables', 'estado']),
             'estado' => 'pendiente',
         ]);
 
