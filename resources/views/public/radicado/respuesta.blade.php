@@ -50,6 +50,16 @@
     <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         
         <!-- Alerts -->
+        @if(session('success'))
+            <div class="mb-6 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl flex items-center gap-3 text-sm shadow-xs">
+                <i class="ph ph-check-circle text-2xl text-emerald-600 shrink-0"></i>
+                <div>
+                    <p class="font-bold text-emerald-900">{{ session('success') }}</p>
+                    <p class="text-xs text-emerald-700 mt-0.5">El radicado permanece abierto y el equipo de correspondencia ya fue notificado.</p>
+                </div>
+            </div>
+        @endif
+
         @if(session('error'))
             <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3.5 rounded-2xl flex items-center gap-3 text-sm shadow-xs">
                 <i class="ph ph-warning-circle text-xl shrink-0 text-red-600"></i>
@@ -82,6 +92,9 @@
                         <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">
                             {{ ucfirst($radicado->prioridad) }} Prioridad
                         </span>
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-blue-500/30 text-blue-100 border border-blue-400/30">
+                            Estado: {{ ucfirst($radicado->estado) }}
+                        </span>
                     </div>
                     <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">{{ $radicado->numero_radicado }}</h2>
                     <p class="text-sm text-blue-100 mt-1 max-w-2xl font-medium leading-relaxed">
@@ -104,7 +117,7 @@
         <!-- Grid Layout: Info + Received Documents (Left) and Response Uploader (Right) -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <!-- Left Column: Detalles y Documentos Recibidos (7 cols) -->
+            <!-- Left Column: Detalles y Documentos (7 cols) -->
             <div class="lg:col-span-7 space-y-6">
                 
                 <!-- Card: Información del Radicado -->
@@ -143,12 +156,14 @@
                 <!-- Card: Documentos Adjuntos Recibidos (Entrada) -->
                 @php
                     $entradas = $radicado->adjuntos()->where('tipo', 'entrada')->get();
+                    $salidas = $radicado->adjuntos()->where('tipo', 'salida')->get();
                 @endphp
+
                 <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
                             <i class="ph ph-folder text-blue-600 text-lg"></i>
-                            Documentos de Entrada / Anexos
+                            Documentos Iniciales Recibidos (Entrada)
                             <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold ml-1">
                                 {{ $entradas->count() }}
                             </span>
@@ -228,6 +243,70 @@
                         </div>
                     @endif
                 </div>
+
+                <!-- Card: Documentos de Respuesta ya Enviados (Si existen) -->
+                @if($salidas->isNotEmpty())
+                <div class="bg-white rounded-3xl p-6 border border-emerald-200/80 shadow-xs">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="ph ph-paper-plane-tilt text-emerald-600 text-lg"></i>
+                            Documentos de Respuesta Enviados
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold ml-1">
+                                {{ $salidas->count() }}
+                            </span>
+                        </h3>
+
+                        @if($salidas->count() >= 2)
+                        <a href="{{ URL::signedRoute('radicados.public.adjuntos.descargar-todos', ['radicado' => $radicado->id, 'responsable' => $responsable->id, 'tipo' => 'salida']) }}" 
+                           class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200 transition">
+                            <i class="ph ph-archive text-sm"></i>
+                            Descargar respuestas (.ZIP)
+                        </a>
+                        @endif
+                    </div>
+
+                    <p class="text-xs text-slate-500 mb-3">
+                        Ya has enviado los siguientes archivos para este radicado. Puedes consultarlos abajo o agregar más documentos utilizando el panel de la derecha.
+                    </p>
+
+                    <div class="space-y-2">
+                        @foreach($salidas as $adjunto)
+                            @php
+                                $ext = strtolower(pathinfo($adjunto->nombre_original, PATHINFO_EXTENSION));
+                                $iconClass = 'ph-file-text text-slate-600 bg-slate-100';
+                                if ($ext === 'pdf') $iconClass = 'ph-file-pdf text-red-600 bg-red-50';
+                                elseif (in_array($ext, ['doc', 'docx'])) $iconClass = 'ph-file-doc text-blue-600 bg-blue-50';
+                                elseif (in_array($ext, ['xls', 'xlsx', 'csv'])) $iconClass = 'ph-file-xls text-emerald-600 bg-emerald-50';
+                                elseif (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) $iconClass = 'ph-file-image text-indigo-600 bg-indigo-50';
+                                elseif (in_array($ext, ['zip', 'rar', '7z'])) $iconClass = 'ph-file-zip text-amber-600 bg-amber-50';
+                            @endphp
+                            <div class="p-2.5 bg-emerald-50/40 border border-emerald-200/60 rounded-xl flex items-center justify-between gap-3 text-xs">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <div class="w-8 h-8 rounded-lg flex items-center justify-center text-base shrink-0 {{ $iconClass }}">
+                                        <i class="ph {{ explode(' ', $iconClass)[0] }}"></i>
+                                    </div>
+                                    <span class="font-semibold text-slate-800 truncate" title="{{ $adjunto->nombre_original }}">
+                                        {{ $adjunto->nombre_original }}
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <a href="{{ URL::signedRoute('radicados.public.adjuntos.ver', ['radicado' => $radicado->id, 'responsable' => $responsable->id, 'adjunto' => $adjunto->id]) }}" 
+                                       target="_blank"
+                                       class="text-emerald-700 hover:underline font-bold">
+                                        Ver
+                                    </a>
+                                    <span class="text-slate-300">|</span>
+                                    <a href="{{ URL::signedRoute('radicados.public.adjuntos.descargar', ['radicado' => $radicado->id, 'responsable' => $responsable->id, 'adjunto' => $adjunto->id]) }}" 
+                                       class="text-emerald-700 hover:underline font-bold">
+                                        Descargar
+                                    </a>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
+
             </div>
 
             <!-- Right Column: Subida de Respuesta (5 cols) -->
@@ -285,9 +364,13 @@
                         <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-3">
                             <i class="ph ph-upload-simple font-bold"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-slate-900 leading-tight">Subir Documento(s) de Respuesta</h3>
+                        <h3 class="text-lg font-bold text-slate-900 leading-tight">
+                            {{ $salidas->isNotEmpty() ? 'Adjuntar Documentos Adicionales' : 'Subir Documento(s) de Respuesta' }}
+                        </h3>
                         <p class="text-xs text-slate-500 mt-1 leading-relaxed">
-                            Adjunta uno o varios documentos oficiales que den respuesta al radicado (oficios, memorandos, actas, etc.).
+                            {{ $salidas->isNotEmpty() 
+                                ? 'Puedes seguir subiendo más oficios o soportes mientras el trámite no haya sido cerrado formalmente.' 
+                                : 'Adjunta uno o varios documentos oficiales que den respuesta al radicado (oficios, memorandos, actas, etc.).' }}
                         </p>
                     </div>
 
@@ -379,7 +462,7 @@
                                 <span>Enviar Respuesta(s)</span>
                             </button>
                             <p class="text-[11px] text-slate-400 text-center mt-2.5">
-                                Al enviar, el trámite quedará marcado como <strong>Completado</strong> en el sistema.
+                                Se notificará automáticamente al equipo de correspondencia de SIRAD.
                             </p>
                         </div>
                     </form>

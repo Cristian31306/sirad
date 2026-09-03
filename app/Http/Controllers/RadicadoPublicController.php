@@ -7,7 +7,6 @@ use App\Models\RadicadoAdjunto;
 use App\Models\Responsable;
 use App\Models\User;
 use App\Notifications\RespuestaSubidaNotification;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -24,8 +23,8 @@ class RadicadoPublicController extends Controller
 
         $radicado->load(['adjuntos', 'tipoTramite', 'responsables']);
 
-        // Si ya tiene archivo de salida, mostrar vista de respuesta completada con los archivos
-        if ($radicado->hasArchivoSalida()) {
+        // Solo si el radicado ya fue cerrado (completado) o anulado, mostrar vista de cierre
+        if (in_array($radicado->estado, ['completado', 'anulado'])) {
             return view('public.radicado.respuesta_completada', compact('radicado', 'responsable'));
         }
 
@@ -38,8 +37,8 @@ class RadicadoPublicController extends Controller
             abort(403, 'Enlace no válido o ha expirado.');
         }
 
-        if ($radicado->hasArchivoSalida()) {
-            return back()->with('error', 'Este radicado ya cuenta con una respuesta registrada.');
+        if (in_array($radicado->estado, ['completado', 'anulado'])) {
+            return back()->with('error', 'Este radicado ya ha sido cerrado o anulado formalmente.');
         }
 
         $request->validate([
@@ -55,36 +54,39 @@ class RadicadoPublicController extends Controller
             'archivos_salida.*.mimes' => 'Formato no válido. Solo se permiten PDF, Word, Excel, Imágenes (JPG, PNG) o ZIP/RAR.',
         ]);
 
-        DB::transaction(function () use ($radicado, $request) {
-            $radicado->update([
-                'estado' => 'completado',
-                'fecha_salida' => Carbon::today()->toDateString(),
-            ]);
+        $nombresArchivos = [];
 
+        DB::transaction(function () use ($radicado, $request, &$nombresArchivos) {
+            // NOTA: NO se marca como 'completado'. El radicado continúa en su estado actual (ej: pendiente).
+            // La finalización formal del trámite la realiza el usuario operativo en SIRAD al verificar la respuesta.
             if ($request->hasFile('archivos_salida')) {
                 foreach ($request->file('archivos_salida') as $file) {
                     if ($file->isValid()) {
                         $path = $file->store('radicados/salidas', 'local');
+                        $nombreOriginal = $file->getClientOriginalName();
+                        $nombresArchivos[] = $nombreOriginal;
+
                         $radicado->adjuntos()->create([
                             'tipo' => 'salida',
                             'path' => $path,
-                            'nombre_original' => $file->getClientOriginalName(),
+                            'nombre_original' => $nombreOriginal,
                         ]);
                     }
                 }
             }
         });
 
-        // Notificar a usuarios de SIRAD
+        // Notificar a usuarios de SIRAD con rol 'usuario' (y fallback a 'admin' si no existen operarios)
         $usuarios = User::where('role', 'usuario')->get();
-        if ($usuarios->isNotEmpty()) {
-            Notification::send($usuarios, new RespuestaSubidaNotification($radicado, $responsable));
+        if ($usuarios->isEmpty()) {
+            $usuarios = User::where('role', 'admin')->get();
         }
 
-        $radicado->load('adjuntos');
+        if ($usuarios->isNotEmpty()) {
+            Notification::send($usuarios, new RespuestaSubidaNotification($radicado, $responsable, $nombresArchivos));
+        }
 
-        return view('public.radicado.respuesta_completada', compact('radicado', 'responsable'))
-            ->with('success', 'Documento(s) de respuesta subido(s) correctamente. El trámite ha sido completado.');
+        return redirect($request->fullUrl())->with('success', 'Documento(s) de respuesta subido(s) correctamente. Puede continuar agregando más archivos si lo requiere mientras el trámite permanezca abierto.');
     }
 
     public function downloadAdjunto(Request $request, Radicado $radicado, Responsable $responsable, RadicadoAdjunto $adjunto)

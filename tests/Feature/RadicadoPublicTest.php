@@ -113,10 +113,15 @@ class RadicadoPublicTest extends TestCase
         $this->assertStringContainsString('application/zip', strtolower($zipResponse->headers->get('Content-Type')));
     }
 
-    public function test_can_upload_multiple_response_files_via_signed_url(): void
+    public function test_can_upload_multiple_response_files_without_completing_and_continue_uploading(): void
     {
         $storage = Storage::fake('local');
         Notification::fake();
+
+        $usuarioOperativo = User::factory()->create([
+            'email' => 'operario@sirad.gov.co',
+            'role' => 'usuario',
+        ]);
 
         $file1 = UploadedFile::fake()->create('oficio_respuesta_legal.pdf', 1024, 'application/pdf');
         $file2 = UploadedFile::fake()->create('anexo_resolucion.docx', 512, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -126,27 +131,49 @@ class RadicadoPublicTest extends TestCase
             'responsable' => $this->responsable->id,
         ]);
 
+        // 1. Primera carga de 2 archivos
         $response = $this->post($signedPostUrl, [
             'archivos_salida' => [$file1, $file2],
         ]);
 
-        $response->assertStatus(200);
-        $response->assertSee('Respuesta Registrada con Éxito');
-        $response->assertSee('oficio_respuesta_legal.pdf');
-        $response->assertSee('anexo_resolucion.docx');
+        $response->assertRedirect($signedPostUrl);
 
+        // El radicado NO debe marcarse como completado
         $this->radicado->refresh();
-        $this->assertEquals('completado', $this->radicado->estado);
-        $this->assertNotNull($this->radicado->fecha_salida);
+        $this->assertEquals('pendiente', $this->radicado->estado);
+        $this->assertNull($this->radicado->fecha_salida);
+
+        // Se verifica que se notificó a los usuarios con rol 'usuario'
+        Notification::assertSentTo($usuarioOperativo, \App\Notifications\RespuestaSubidaNotification::class);
+
+        // 2. Comprobar que al volver al formulario se ven los 2 archivos y se puede seguir subiendo
+        $signedGetUrl = URL::signedRoute('radicados.public.respuesta', [
+            'radicado' => $this->radicado->id,
+            'responsable' => $this->responsable->id,
+        ]);
+        $getResponse = $this->get($signedGetUrl);
+        $getResponse->assertStatus(200);
+        $getResponse->assertSee('oficio_respuesta_legal.pdf');
+        $getResponse->assertSee('anexo_resolucion.docx');
+        $getResponse->assertSee('Adjuntar Documentos Adicionales');
+
+        // 3. Segunda carga de otro archivo adicional
+        $file3 = UploadedFile::fake()->create('adicional_soporte.pdf', 256, 'application/pdf');
+        $response2 = $this->post($signedPostUrl, [
+            'archivos_salida' => [$file3],
+        ]);
+        $response2->assertRedirect($signedPostUrl);
 
         $salidas = $this->radicado->adjuntos()->where('tipo', 'salida')->get();
-        $this->assertCount(2, $salidas);
-        $this->assertTrue($salidas->pluck('nombre_original')->contains('oficio_respuesta_legal.pdf'));
-        $this->assertTrue($salidas->pluck('nombre_original')->contains('anexo_resolucion.docx'));
+        $this->assertCount(3, $salidas);
+        $this->assertTrue($salidas->pluck('nombre_original')->contains('adicional_soporte.pdf'));
 
-        foreach ($salidas as $salida) {
-            $storage->assertExists($salida->path);
-        }
+        // 4. Cuando el equipo interno formalmente completa el radicado
+        $this->radicado->update(['estado' => 'completado', 'fecha_salida' => Carbon::today()->toDateString()]);
+
+        $completedResponse = $this->get($signedGetUrl);
+        $completedResponse->assertStatus(200);
+        $completedResponse->assertSee('¡Respuesta Registrada con Éxito!');
     }
 
     public function test_unsigned_urls_are_forbidden(): void
