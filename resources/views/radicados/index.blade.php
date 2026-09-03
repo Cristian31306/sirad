@@ -265,10 +265,21 @@
                                 {{ $radicado->fecha_radicacion->format('d/m/Y') }}
                             </td>
                             <td class="px-6 py-4">
-                                {{ Str::limit($radicado->remitente, 25) }}<br>
-                                <span class="text-xs text-gray-500">{{ Str::limit($radicado->empresa, 25) }}</span>
+                                <div class="flex flex-col gap-1">
+                                    @forelse($radicado->responsables as $resp)
+                                        <span class="inline-flex items-center gap-1.5 flex-wrap">
+                                            <span>{{ $resp->nombre }}</span>
+                                            @if($resp->pivot->hubo_rebote)
+                                                <span class="text-[10px] font-bold text-red-700 bg-red-100 border border-red-200 px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5" title="Correo rebotado según reporte de Brevo">
+                                                    <i class="ph-bold ph-warning"></i> Rebotado
+                                                </span>
+                                            @endif
+                                        </span>
+                                    @empty
+                                        <span class="text-gray-400">N/A</span>
+                                    @endforelse
+                                </div>
                             </td>
-                            <td class="px-6 py-4">{{ $radicado->responsables->pluck('nombre')->implode(', ') ?: 'N/A' }}</td>
                             <td class="px-6 py-4 text-gray-500">{{ $radicado->prioridad }}</td>
                             <td class="px-6 py-4">
                                 @if($radicado->estado == 'pendiente')

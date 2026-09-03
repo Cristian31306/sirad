@@ -289,10 +289,27 @@
             </div>
             @endcan
 
+    @php
+        $rebotes = $radicado->responsables->filter(fn($r) => $r->pivot->hubo_rebote);
+    @endphp
+    @if($rebotes->isNotEmpty())
+        <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-4 sm:p-5 mb-6 shadow-xs flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center text-xl shrink-0">
+                <i class="ph-bold ph-warning"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-red-900 text-sm flex items-center gap-2">
+                    <span>Alerta de Notificación: Correo Rebotado</span>
+                    <span class="text-[10px] uppercase font-extrabold bg-red-200 text-red-800 px-2 py-0.5 rounded-md">Brevo Webhook</span>
+                </h4>
+                <p class="text-xs text-red-700 mt-1 leading-relaxed">
+                    El proveedor de correo electrónico (Brevo) reportó que la notificación automática no pudo ser entregada a:
+                    <strong>{{ $rebotes->pluck('nombre')->implode(', ') }}</strong>.
+                    Es posible que la dirección de correo esté mal escrita, el dominio no exista o el buzón esté lleno.
+                </p>
+            </div>
         </div>
-    </div>
-
-
+    @endif
 
     <div class="flex flex-col lg:flex-row gap-6">
         
