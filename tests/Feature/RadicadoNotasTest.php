@@ -192,4 +192,53 @@ class RadicadoNotasTest extends TestCase
         $this->assertNotNull($nota->fresh()->responsable);
         $this->assertEquals('Carlos Mendoza', $nota->fresh()->responsable->nombre);
     }
+
+    public function test_check_vencimientos_command_smart_threshold(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        // Crear trámite corto de 5 días calendario (ej: Tutela)
+        $tipoCorto = \App\Models\TipoTramite::create([
+            'nombre' => 'TUTELA TEST',
+            'dias_habiles' => 5,
+            'tipo_dias' => 'calendario',
+            'activo' => true,
+        ]);
+
+        // Caso 1: Radicado creado hoy con 4 días restantes -> NO debe entrar en alerta (umbral es 2 días)
+        $radicadoNuevo = \App\Models\Radicado::create([
+            'numero_radicado' => 'RAD-TUTELA-NUEVO',
+            'fecha_radicacion' => now()->toDateString(),
+            'fecha_limite' => now()->addDays(4)->toDateString(),
+            'remitente' => 'Juzgado 1',
+            'tipo_tramite_id' => $tipoCorto->id,
+            'medio' => 'Correo Electrónico',
+            'prioridad' => 'alta',
+            'estado' => 'pendiente',
+            'asunto' => 'Tutela recién llegada',
+        ]);
+        $radicadoNuevo->responsables()->attach($this->responsable1->id);
+
+        // Caso 2: Radicado con 2 días restantes -> SÍ debe entrar en alerta
+        $radicadoUrgente = \App\Models\Radicado::create([
+            'numero_radicado' => 'RAD-TUTELA-URGENTE',
+            'fecha_radicacion' => now()->subDays(3)->toDateString(),
+            'fecha_limite' => now()->addDays(2)->toDateString(),
+            'remitente' => 'Juzgado 2',
+            'tipo_tramite_id' => $tipoCorto->id,
+            'medio' => 'Correo Electrónico',
+            'prioridad' => 'alta',
+            'estado' => 'pendiente',
+            'asunto' => 'Tutela a 2 días de vencer',
+        ]);
+        $radicadoUrgente->responsables()->attach($this->responsable1->id);
+
+        $this->artisan('radicados:check-vencimientos')->assertSuccessful();
+
+        $radicadoNuevo->refresh();
+        $radicadoUrgente->refresh();
+
+        $this->assertEquals('pendiente', $radicadoNuevo->estado);
+        $this->assertEquals('alerta', $radicadoUrgente->estado);
+    }
 }

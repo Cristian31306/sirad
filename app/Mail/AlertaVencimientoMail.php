@@ -10,6 +10,7 @@ use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Storage;
 
 class AlertaVencimientoMail extends Mailable implements ShouldQueue
 {
@@ -20,17 +21,24 @@ class AlertaVencimientoMail extends Mailable implements ShouldQueue
 
     public $radicado;
     public $responsable;
+    public $diasFaltantes;
 
-    public function __construct(Radicado $radicado, $responsable = null)
+    public function __construct(Radicado $radicado, $responsable = null, ?int $diasFaltantes = null)
     {
         $this->radicado = $radicado;
         $this->responsable = $responsable;
+        $this->diasFaltantes = $diasFaltantes;
     }
 
     public function envelope(): Envelope
     {
+        $tipoDiasTexto = ($this->radicado->tipoTramite && $this->radicado->tipoTramite->tipo_dias === 'calendario') ? 'días cal.' : 'días háb.';
+        $subject = $this->radicado->estado === 'vencido'
+            ? '⚠️ TRÁMITE VENCIDO: ' . $this->radicado->numero_radicado
+            : '⏰ ALERTA: ' . $this->radicado->numero_radicado . ' (restan ' . ($this->diasFaltantes ?? 2) . ' ' . $tipoDiasTexto . ')';
+
         return new Envelope(
-            subject: 'ALERTA DE VENCIMIENTO: '.$this->radicado->numero_radicado,
+            subject: $subject,
         );
     }
 
@@ -45,11 +53,10 @@ class AlertaVencimientoMail extends Mailable implements ShouldQueue
     {
         $attachments = [];
 
-        if ($this->radicado->hasArchivoEntrada()) {
-            $path = storage_path('app/public/' . $this->radicado->archivo_entrada_path);
-            if (file_exists($path)) {
-                $attachments[] = Attachment::fromPath($path)
-                    ->as($this->radicado->archivo_entrada_nombre);
+        foreach ($this->radicado->adjuntos()->where('tipo', 'entrada')->get() as $adjunto) {
+            if (Storage::disk('local')->exists($adjunto->path)) {
+                $attachments[] = Attachment::fromPath(Storage::disk('local')->path($adjunto->path))
+                    ->as($adjunto->nombre_original);
             }
         }
 

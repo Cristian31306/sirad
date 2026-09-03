@@ -46,9 +46,13 @@
             <div class="content">
                 <p class="subtitle">
                     @if($radicado->estado === 'vencido')
-                        El siguiente trámite ha superado su fecha límite.
+                        El siguiente trámite ha superado su fecha límite legal de respuesta.
                     @else
-                        El siguiente trámite está a 5 días hábiles o menos de vencer.
+                        @php
+                            $tipoDiasTexto = ($radicado->tipoTramite && $radicado->tipoTramite->tipo_dias === 'calendario') ? 'días calendario' : 'días hábiles';
+                            $diasTxt = isset($diasFaltantes) ? $diasFaltantes : 2;
+                        @endphp
+                        El siguiente trámite está a <strong>{{ $diasTxt }} {{ $tipoDiasTexto }}</strong> de vencer.
                     @endif
                 </p>
                 

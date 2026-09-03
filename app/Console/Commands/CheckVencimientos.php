@@ -51,8 +51,17 @@ class CheckVencimientos extends Command
                 continue;
             }
 
-            // Contar días faltantes según si es trámite en días calendario o hábiles
+            // Determinar umbral de alerta preventiva según la duración total del trámite
+            $diasTotales = $radicado->tipoTramite ? (int) $radicado->tipoTramite->dias_habiles : 15;
             $esCalendario = $radicado->tipoTramite && $radicado->tipoTramite->tipo_dias === 'calendario';
+
+            if ($diasTotales <= 3) {
+                $umbralAlerta = 1; // 24 horas antes para trámites de hasta 3 días
+            } elseif ($diasTotales <= 5) {
+                $umbralAlerta = 2; // 48 horas antes para trámites de 5 días
+            } else {
+                $umbralAlerta = 5; // 5 días antes para trámites regulares (15 o 30 días)
+            }
 
             if ($esCalendario) {
                 // Para días calendario: diferencia directa en días
@@ -71,16 +80,16 @@ class CheckVencimientos extends Command
                 }
             }
 
-            if ($diasFaltantes <= 5 && $radicado->estado === 'pendiente') {
+            if ($diasFaltantes <= $umbralAlerta && $radicado->estado === 'pendiente') {
                 $radicado->update(['estado' => 'alerta']);
 
-                // Correos
+                // Correos preventivos solo al rol usuario
                 foreach ($radicado->responsables as $responsable) {
                     if ($responsable->correo) {
                         try {
                             Mail::to($responsable->correo)
                                 ->cc($usuarios)
-                                ->queue(new AlertaVencimientoMail($radicado, $responsable));
+                                ->queue(new AlertaVencimientoMail($radicado, $responsable, $diasFaltantes));
                         } catch (\Exception $e) {
                             \Log::error('Mail Error Alerta: '.$e->getMessage());
                         }
