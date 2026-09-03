@@ -402,7 +402,7 @@
                             for (let i = 0; i < fileList.length; i++) {
                                 const file = fileList[i];
                                 if (file.size > maxSizeBytes) {
-                                    alert(`El archivo "${file.name}" supera el límite de 10 MB.`);
+                                    alert('El archivo ' + file.name + ' supera el límite de 10 MB.');
                                     continue;
                                 }
                                 if (!currentKeys.includes(file.name + '-' + file.size)) {
