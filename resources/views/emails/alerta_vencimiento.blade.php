@@ -37,6 +37,8 @@
                 <p class="alert-title">
                     @if($radicado->estado === 'vencido')
                         ¡ATENCIÓN! Trámite Vencido
+                    @elseif(isset($diasFaltantes) && $diasFaltantes === 0)
+                        🚨 ¡ATENCIÓN! ESTE TRÁMITE VENCE HOY
                     @else
                         ¡ATENCIÓN! Trámite próximo a vencer
                     @endif
@@ -47,6 +49,8 @@
                 <p class="subtitle">
                     @if($radicado->estado === 'vencido')
                         El siguiente trámite ha superado su fecha límite legal de respuesta.
+                    @elseif(isset($diasFaltantes) && $diasFaltantes === 0)
+                        <strong>¡Hoy es el último día de plazo legal!</strong> Se requiere radicar y formalizar la respuesta de inmediato antes del cierre de jornada.
                     @else
                         @php
                             $tipoDiasTexto = ($radicado->tipoTramite && $radicado->tipoTramite->tipo_dias === 'calendario') ? 'días calendario' : 'días hábiles';

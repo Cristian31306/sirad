@@ -33,9 +33,14 @@ class AlertaVencimientoMail extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         $tipoDiasTexto = ($this->radicado->tipoTramite && $this->radicado->tipoTramite->tipo_dias === 'calendario') ? 'días cal.' : 'días háb.';
-        $subject = $this->radicado->estado === 'vencido'
-            ? '⚠️ TRÁMITE VENCIDO: ' . $this->radicado->numero_radicado
-            : '⏰ ALERTA: ' . $this->radicado->numero_radicado . ' (restan ' . ($this->diasFaltantes ?? 2) . ' ' . $tipoDiasTexto . ')';
+        
+        if ($this->radicado->estado === 'vencido') {
+            $subject = '⚠️ TRÁMITE VENCIDO: ' . $this->radicado->numero_radicado;
+        } elseif ($this->diasFaltantes === 0) {
+            $subject = '🚨 ¡VENCE HOY!: ' . $this->radicado->numero_radicado . ' (ÚLTIMO DÍA DE PLAZO)';
+        } else {
+            $subject = '⏰ ALERTA: ' . $this->radicado->numero_radicado . ' (restan ' . ($this->diasFaltantes ?? 2) . ' ' . $tipoDiasTexto . ')';
+        }
 
         return new Envelope(
             subject: $subject,

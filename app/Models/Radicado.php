@@ -25,6 +25,7 @@ class Radicado extends Model
         'estado_respuesta',
         'respuesta_marcada_por',
         'fecha_respuesta_marcada',
+        'alerta_ultimo_dia_enviada',
     ];
 
     protected $casts = [
@@ -32,6 +33,7 @@ class Radicado extends Model
         'fecha_limite' => 'date',
         'fecha_salida' => 'date',
         'fecha_respuesta_marcada' => 'datetime',
+        'alerta_ultimo_dia_enviada' => 'boolean',
     ];
 
     public function hasArchivoEntrada(): bool

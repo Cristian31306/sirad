@@ -241,4 +241,50 @@ class RadicadoNotasTest extends TestCase
         $this->assertEquals('pendiente', $radicadoNuevo->estado);
         $this->assertEquals('alerta', $radicadoUrgente->estado);
     }
+
+    public function test_check_vencimientos_sends_last_day_alert_to_admin_and_users(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+
+        // Crear un usuario admin
+        $admin = \App\Models\User::create([
+            'name' => 'Jefe Admin',
+            'email' => 'jefe@algorah.bond',
+            'password' => bcrypt('secret123'),
+            'role' => 'admin',
+        ]);
+
+        $tipo = \App\Models\TipoTramite::create([
+            'nombre' => 'DERECHO PETICION TEST',
+            'dias_habiles' => 15,
+            'tipo_dias' => 'habiles',
+            'activo' => true,
+        ]);
+
+        // Radicado que vence HOY
+        $radicadoHoy = \App\Models\Radicado::create([
+            'numero_radicado' => 'RAD-VENCE-HOY',
+            'fecha_radicacion' => now()->subDays(15)->toDateString(),
+            'fecha_limite' => now()->toDateString(),
+            'remitente' => 'Ciudadano Preocupado',
+            'tipo_tramite_id' => $tipo->id,
+            'medio' => 'Físico',
+            'prioridad' => 'urgente',
+            'estado' => 'alerta',
+            'asunto' => 'Trámite que vence hoy mismo',
+        ]);
+        $radicadoHoy->responsables()->attach($this->responsable1->id);
+
+        $this->artisan('radicados:check-vencimientos')->assertSuccessful();
+
+        $radicadoHoy->refresh();
+        $this->assertTrue($radicadoHoy->alerta_ultimo_dia_enviada);
+
+        // Verificar que se envió correo al responsable con copia al admin (jefe) y al usuario operativo
+        \Illuminate\Support\Facades\Mail::assertQueued(\App\Mail\AlertaVencimientoMail::class, function ($mail) use ($admin) {
+            return $mail->diasFaltantes === 0 &&
+                   $mail->hasCc($admin->email) &&
+                   $mail->hasCc($this->userOperativo->email);
+        });
+    }
 }

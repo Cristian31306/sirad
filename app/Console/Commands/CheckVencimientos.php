@@ -80,6 +80,34 @@ class CheckVencimientos extends Command
                 }
             }
 
+            // 1. Caso crítico: ¡HOY ES EL ÚLTIMO DÍA DE PLAZO!
+            // Notificar al responsable con copia a TODOS (admin y usuario) para que el jefe acose a los responsables hoy
+            $esHoyUltimoDia = $hoy->isSameDay($fechaLimite) || $diasFaltantes === 0;
+
+            if ($esHoyUltimoDia) {
+                if (!$radicado->alerta_ultimo_dia_enviada) {
+                    $radicado->update([
+                        'alerta_ultimo_dia_enviada' => true,
+                        'estado' => 'alerta',
+                    ]);
+
+                    foreach ($radicado->responsables as $responsable) {
+                        if ($responsable->correo) {
+                            try {
+                                Mail::to($responsable->correo)
+                                    ->cc($todos)
+                                    ->queue(new AlertaVencimientoMail($radicado, $responsable, 0));
+                            } catch (\Exception $e) {
+                                \Log::error('Mail Error Ultimo Dia: '.$e->getMessage());
+                            }
+                        }
+                    }
+                }
+
+                continue;
+            }
+
+            // 2. Alerta preventiva anticipada (solo al personal operativo 'usuario')
             if ($diasFaltantes <= $umbralAlerta && $radicado->estado === 'pendiente') {
                 $radicado->update(['estado' => 'alerta']);
 
