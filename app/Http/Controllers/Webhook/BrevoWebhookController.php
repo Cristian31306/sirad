@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Webhook;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Radicado;
 use App\Models\Responsable;
-use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use App\Notifications\CorreoRebotadoNotification;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 
 class BrevoWebhookController extends Controller
 {
@@ -38,6 +41,16 @@ class BrevoWebhookController extends Controller
                         ]);
 
                         Log::info("Webhook Brevo: Rebote registrado para radicado {$numeroRadicado} y responsable {$email}.");
+
+                        // Enviar correo de alerta a usuarios operativos (rol 'usuario') o admin
+                        $usuarios = User::where('role', 'usuario')->get();
+                        if ($usuarios->isEmpty()) {
+                            $usuarios = User::where('role', 'admin')->get();
+                        }
+
+                        if ($usuarios->isNotEmpty()) {
+                            Notification::send($usuarios, new CorreoRebotadoNotification($radicado, $responsable, $eventType));
+                        }
                     }
                 }
             }
