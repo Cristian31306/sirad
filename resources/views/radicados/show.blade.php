@@ -1,5 +1,6 @@
 <x-app-layout>
-    <div class="mb-6">
+    <div x-data="{ editRespModal: { open: false, id: null, nombre: '', correo: '', huboRebote: false } }">
+        <div class="mb-6">
         <div class="flex items-center gap-3">
             <a href="{{ route('radicados.index') }}" class="text-gray-400 hover:text-gray-600">Radicados</a>
             <span class="text-gray-300">/</span>
@@ -295,20 +296,31 @@
         $rebotes = $radicado->responsables->filter(fn($r) => $r->pivot->hubo_rebote);
     @endphp
     @if($rebotes->isNotEmpty())
-        <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-4 sm:p-5 mb-6 shadow-xs flex items-start gap-3.5">
-            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center text-xl shrink-0">
-                <i class="ph-bold ph-warning"></i>
+        <div class="bg-red-50 border-2 border-red-200 rounded-2xl p-4 sm:p-5 mb-6 shadow-xs flex flex-col sm:flex-row items-start justify-between gap-4">
+            <div class="flex items-start gap-3.5">
+                <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center text-xl shrink-0">
+                    <i class="ph-bold ph-warning"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-red-900 text-sm flex items-center gap-2">
+                        <span>Alerta de Notificación: Correo Rebotado</span>
+                        <span class="text-[10px] uppercase font-extrabold bg-red-200 text-red-800 px-2 py-0.5 rounded-md">Brevo Webhook</span>
+                    </h4>
+                    <p class="text-xs text-red-700 mt-1 leading-relaxed">
+                        El proveedor de correo electrónico reportó que la notificación automática no pudo ser entregada a:
+                        <strong>{{ $rebotes->pluck('nombre')->implode(', ') }}</strong>.
+                        Puedes corregir el correo directamente y el sistema le reenviará la notificación automáticamente.
+                    </p>
+                </div>
             </div>
-            <div>
-                <h4 class="font-bold text-red-900 text-sm flex items-center gap-2">
-                    <span>Alerta de Notificación: Correo Rebotado</span>
-                    <span class="text-[10px] uppercase font-extrabold bg-red-200 text-red-800 px-2 py-0.5 rounded-md">Brevo Webhook</span>
-                </h4>
-                <p class="text-xs text-red-700 mt-1 leading-relaxed">
-                    El proveedor de correo electrónico (Brevo) reportó que la notificación automática no pudo ser entregada a:
-                    <strong>{{ $rebotes->pluck('nombre')->implode(', ') }}</strong>.
-                    Es posible que la dirección de correo esté mal escrita, el dominio no exista o el buzón esté lleno.
-                </p>
+            <div class="flex flex-wrap gap-2 shrink-0 self-start sm:self-center">
+                @foreach($rebotes as $reb)
+                    <button type="button" 
+                        @click="editRespModal = { open: true, id: {{ $reb->id }}, nombre: '{{ addslashes($reb->nombre) }}', correo: '{{ addslashes($reb->correo) }}', huboRebote: true }" 
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer">
+                        <i class="ph-bold ph-pencil-simple text-sm"></i> Corregir correo de {{ Str::words($reb->nombre, 1, '') }}
+                    </button>
+                @endforeach
             </div>
         </div>
     @endif
@@ -346,25 +358,56 @@
                 </div>
                 @endif
                 <div class="pt-2 border-t border-gray-50">
-                    <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Responsables</span>
-                    <div class="flex flex-col gap-2 mt-1">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Responsables</span>
+                        <span class="text-[11px] text-gray-400 font-medium">{{ $radicado->responsables->count() }} asignado(s)</span>
+                    </div>
+                    <div class="flex flex-col gap-2.5 mt-1">
                         @forelse($radicado->responsables as $resp)
-                            <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
-                                    {{ substr($resp->nombre, 0, 1) }}
-                                </div>
-                                <div>
-                                    <span class="font-medium text-gray-900 block leading-tight">
-                                        {{ $resp->nombre }}
-                                        @if($resp->pivot->hubo_rebote)
-                                            <span class="ml-1 text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full" title="Rebotó el correo de notificación. Fecha: {{ optional($resp->pivot->fecha_rebote)->format('Y-m-d H:i') }}">
-                                                <i class="ph ph-warning-circle"></i> Correo Rebotado
+                            <div class="p-3 rounded-xl border {{ $resp->pivot->hubo_rebote ? 'border-red-200 bg-red-50/40' : 'border-gray-100 bg-gray-50/50' }} flex flex-col gap-2">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <div class="w-8 h-8 rounded-full {{ $resp->pivot->hubo_rebote ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600' }} flex items-center justify-center font-bold text-sm shrink-0">
+                                            {{ substr($resp->nombre, 0, 1) }}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <span class="font-semibold text-gray-900 text-xs block truncate leading-tight">
+                                                {{ $resp->nombre }}
                                             </span>
-                                        @endif
-                                    </span>
-                                    @if($resp->especialidad)
-                                        <span class="text-xs text-gray-500">{{ $resp->especialidad }}</span>
+                                            <span class="text-[11px] text-gray-500 block truncate flex items-center gap-1 mt-0.5">
+                                                <i class="ph ph-envelope text-gray-400"></i>
+                                                {{ $resp->correo }}
+                                            </span>
+                                            @if($resp->especialidad)
+                                                <span class="text-[10px] text-gray-400 block truncate">{{ $resp->especialidad }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @if($resp->pivot->hubo_rebote)
+                                        <span class="shrink-0 text-[10px] font-bold text-red-700 bg-red-100 border border-red-200 px-1.5 py-0.5 rounded-md inline-flex items-center gap-0.5">
+                                            <i class="ph-bold ph-warning"></i> Rebotado
+                                        </span>
                                     @endif
+                                </div>
+
+                                <!-- Acciones por funcionario -->
+                                <div class="flex items-center justify-end gap-1.5 pt-2 border-t {{ $resp->pivot->hubo_rebote ? 'border-red-100' : 'border-gray-200/60' }}">
+                                    <!-- Botón Editar / Corregir Correo -->
+                                    <button type="button" 
+                                        @click="editRespModal = { open: true, id: {{ $resp->id }}, nombre: '{{ addslashes($resp->nombre) }}', correo: '{{ addslashes($resp->correo) }}', huboRebote: {{ $resp->pivot->hubo_rebote ? 'true' : 'false' }} }"
+                                        class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg {{ $resp->pivot->hubo_rebote ? 'bg-red-600 text-white hover:bg-red-700 shadow-xs' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50' }} transition cursor-pointer">
+                                        <i class="ph-bold ph-pencil-simple text-xs"></i>
+                                        <span>{{ $resp->pivot->hubo_rebote ? 'Corregir Correo y Reenviar' : 'Cambiar correo' }}</span>
+                                    </button>
+
+                                    <!-- Botón Reenviar sin cambiar correo -->
+                                    <form action="{{ route('radicados.responsables.reenviar', [$radicado, $resp]) }}" method="POST" class="inline" onsubmit="return confirm('¿Deseas reenviar la notificación por correo a {{ addslashes($resp->nombre) }}?');">
+                                        @csrf
+                                        <button type="submit" title="Reenviar notificación a este correo" class="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/50 transition cursor-pointer">
+                                            <i class="ph-bold ph-arrow-clockwise text-xs"></i>
+                                            <span>Reenviar</span>
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         @empty
@@ -834,6 +877,62 @@
             </div>
         </div>
     @endif
+
+    <!-- Modal Corregir / Reenviar Correo de Responsable -->
+    <div x-show="editRespModal.open" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="editRespModal.open" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="editRespModal.open = false"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="editRespModal.open" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form :action="'{{ url('radicados/'.$radicado->id.'/responsables') }}/' + editRespModal.id + '/correo'" method="POST">
+                    @csrf
+                    @method('PATCH')
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto shrink-0 flex items-center justify-center h-12 w-12 rounded-2xl sm:mx-0 sm:h-10 sm:w-10" :class="editRespModal.huboRebote ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'">
+                                <i class="text-xl" :class="editRespModal.huboRebote ? 'ph-bold ph-warning-circle' : 'ph-bold ph-envelope-simple'"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                                <h3 class="text-lg font-bold text-gray-900" x-text="editRespModal.huboRebote ? 'Corregir Correo y Reenviar' : 'Actualizar Correo del Funcionario'"></h3>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Funcionario: <strong class="text-gray-800" x-text="editRespModal.nombre"></strong>
+                                </p>
+
+                                <template x-if="editRespModal.huboRebote">
+                                    <div class="mt-3 bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700">
+                                        El correo anterior rebotó según reporte del servidor. Al guardarlo corregido, se limpiará la alerta y se reenviará la notificación automáticamente a la nueva dirección.
+                                    </div>
+                                </template>
+
+                                <div class="mt-4">
+                                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Dirección de Correo Electrónico</label>
+                                    <input type="email" name="correo" x-model="editRespModal.correo" required class="w-full text-sm rounded-xl border-gray-300 focus:border-blue-500 focus:ring focus:ring-blue-200" placeholder="ejemplo@gmail.com">
+                                </div>
+
+                                <div class="mt-4 flex items-center gap-2">
+                                    <input type="checkbox" name="reenviar" id="chk_reenviar" value="1" checked class="rounded border-gray-300 text-blue-600 shadow-xs focus:ring-blue-500">
+                                    <label for="chk_reenviar" class="text-xs text-gray-700 font-medium cursor-pointer">
+                                        Reenviar la notificación de asignación a este nuevo correo inmediatamente
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse gap-2">
+                        <button type="submit" class="w-full sm:w-auto inline-flex justify-center items-center gap-1.5 rounded-xl border border-transparent shadow-xs px-5 py-2.5 bg-blue-600 text-sm font-semibold text-white hover:bg-blue-700 transition cursor-pointer">
+                            <i class="ph-bold ph-paper-plane-tilt"></i> Guardar y Reenviar
+                        </button>
+                        <button type="button" @click="editRespModal.open = false" class="w-full sm:w-auto inline-flex justify-center rounded-xl border border-gray-300 px-4 py-2.5 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    </div> <!-- Fin de x-data editRespModal -->
 </x-app-layout>
 
 

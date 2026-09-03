@@ -477,4 +477,81 @@ class RadicadoTest extends TestCase
 
         $response->assertSessionHasErrors(['responsables' => 'Debe seleccionar al menos un funcionario responsable.']);
     }
+
+    public function test_can_update_responsable_correo_from_radicado_and_resend(): void
+    {
+        Mail::fake();
+
+        $radicado = Radicado::create([
+            'numero_radicado' => 'RAD-UPDATE-CORREO',
+            'fecha_radicacion' => Carbon::today()->toDateString(),
+            'remitente' => 'Remitente',
+            'tipo_tramite_id' => $this->tipoTramite->id,
+            'asunto' => 'Prueba actualizar correo',
+            'medio' => 'Correo',
+            'prioridad' => 'Alta',
+            'fecha_limite' => Carbon::today()->addDays(5)->toDateString(),
+            'estado' => 'pendiente',
+        ]);
+
+        $radicado->responsables()->attach($this->responsable->id, [
+            'hubo_rebote' => true,
+            'fecha_rebote' => Carbon::now(),
+        ]);
+
+        $response = $this->actingAs($this->secretaria)->patch(route('radicados.responsables.correo.update', [$radicado, $this->responsable]), [
+            'correo' => 'nuevo.correo.corregido@sirad.gov.co',
+            'reenviar' => '1',
+        ]);
+
+        $response->assertRedirect(route('radicados.show', $radicado));
+        $response->assertSessionHas('success');
+
+        $this->responsable->refresh();
+        $this->assertEquals('nuevo.correo.corregido@sirad.gov.co', $this->responsable->correo);
+
+        $radicado->refresh();
+        $pivot = $radicado->responsables()->where('responsable_id', $this->responsable->id)->first()->pivot;
+        $this->assertFalse((bool) $pivot->hubo_rebote);
+        $this->assertNull($pivot->fecha_rebote);
+
+        Mail::assertQueued(NuevaRadicacionMail::class, function ($mail) {
+            return $mail->hasTo('nuevo.correo.corregido@sirad.gov.co');
+        });
+    }
+
+    public function test_can_resend_notification_to_single_responsable(): void
+    {
+        Mail::fake();
+
+        $radicado = Radicado::create([
+            'numero_radicado' => 'RAD-REENVIAR',
+            'fecha_radicacion' => Carbon::today()->toDateString(),
+            'remitente' => 'Remitente',
+            'tipo_tramite_id' => $this->tipoTramite->id,
+            'asunto' => 'Prueba reenviar notificación',
+            'medio' => 'Correo',
+            'prioridad' => 'Media',
+            'fecha_limite' => Carbon::today()->addDays(5)->toDateString(),
+            'estado' => 'pendiente',
+        ]);
+
+        $radicado->responsables()->attach($this->responsable->id, [
+            'hubo_rebote' => true,
+            'fecha_rebote' => Carbon::now(),
+        ]);
+
+        $response = $this->actingAs($this->secretaria)->post(route('radicados.responsables.reenviar', [$radicado, $this->responsable]));
+
+        $response->assertRedirect(route('radicados.show', $radicado));
+        $response->assertSessionHas('success');
+
+        $radicado->refresh();
+        $pivot = $radicado->responsables()->where('responsable_id', $this->responsable->id)->first()->pivot;
+        $this->assertFalse((bool) $pivot->hubo_rebote);
+
+        Mail::assertQueued(NuevaRadicacionMail::class, function ($mail) {
+            return $mail->hasTo($this->responsable->correo);
+        });
+    }
 }

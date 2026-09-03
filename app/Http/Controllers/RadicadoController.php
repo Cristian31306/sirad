@@ -289,6 +289,69 @@ class RadicadoController extends Controller
         return redirect()->route('radicados.show', $radicado)->with('success', $msg);
     }
 
+    public function updateResponsableCorreo(Request $request, Radicado $radicado, Responsable $responsable)
+    {
+        $request->validate([
+            'correo' => 'required|email:rfc,filter|max:255',
+            'reenviar' => 'nullable|boolean',
+        ], [
+            'correo.required' => 'El correo electrónico es obligatorio.',
+            'correo.email' => 'El formato del correo electrónico no es válido.',
+        ]);
+
+        $nuevoCorreo = strtolower(trim($request->correo));
+        $correoAnterior = $responsable->correo;
+
+        // 1. Actualizar el correo del responsable en la BD
+        $responsable->update([
+            'correo' => $nuevoCorreo,
+        ]);
+
+        // 2. Limpiar el estado de rebote en este radicado
+        $radicado->responsables()->updateExistingPivot($responsable->id, [
+            'hubo_rebote' => false,
+            'fecha_rebote' => null,
+        ]);
+
+        Auditoria::create([
+            'user_id' => auth()->id(),
+            'accion' => "Actualizó correo de responsable {$responsable->nombre} de {$correoAnterior} a {$nuevoCorreo}",
+            'modelo' => 'Radicado',
+            'modelo_id' => $radicado->id,
+            'detalles' => [
+                'responsable_id' => $responsable->id,
+                'correo_anterior' => $correoAnterior,
+                'nuevo_correo' => $nuevoCorreo,
+                'radicado_id' => $radicado->id,
+            ],
+        ]);
+
+        // 3. Reenviar notificación SOLO a este responsable
+        $debeReenviar = $request->boolean('reenviar', true);
+        if ($debeReenviar) {
+            Mail::to($nuevoCorreo)->queue(new NuevaRadicacionMail($radicado, $responsable));
+            $msg = "Correo de {$responsable->nombre} actualizado a {$nuevoCorreo} y notificación reenviada exitosamente.";
+        } else {
+            $msg = "Correo de {$responsable->nombre} actualizado a {$nuevoCorreo}.";
+        }
+
+        return redirect()->route('radicados.show', $radicado)->with('success', $msg);
+    }
+
+    public function reenviarNotificacion(Radicado $radicado, Responsable $responsable)
+    {
+        // Limpiar estado de rebote al reintentar
+        $radicado->responsables()->updateExistingPivot($responsable->id, [
+            'hubo_rebote' => false,
+            'fecha_rebote' => null,
+        ]);
+
+        Mail::to($responsable->correo)->queue(new NuevaRadicacionMail($radicado, $responsable));
+
+        return redirect()->route('radicados.show', $radicado)
+            ->with('success', "Notificación reenviada a {$responsable->nombre} ({$responsable->correo}).");
+    }
+
     public function descargarTodos(Radicado $radicado, ?string $tipo = null)
     {
         $query = $radicado->adjuntos();

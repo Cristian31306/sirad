@@ -26,6 +26,8 @@ Route::middleware(['auth', 'verified', 'force_password'])->group(function () {
     Route::resource('radicados', RadicadoController::class)->except(['destroy']);
     Route::patch('radicados/{radicado}/anular', [RadicadoController::class, 'anular'])->name('radicados.anular');
     Route::patch('radicados/{radicado}/cierre', [RadicadoController::class, 'updateCierre'])->name('radicados.cierre');
+    Route::patch('radicados/{radicado}/responsables/{responsable}/correo', [RadicadoController::class, 'updateResponsableCorreo'])->name('radicados.responsables.correo.update');
+    Route::post('radicados/{radicado}/responsables/{responsable}/reenviar', [RadicadoController::class, 'reenviarNotificacion'])->name('radicados.responsables.reenviar');
     Route::get('adjuntos/{adjunto}/descargar', [RadicadoController::class, 'downloadArchivo'])->name('radicados.archivo.descargar');
     Route::get('adjuntos/{adjunto}/ver', [RadicadoController::class, 'verArchivo'])->name('radicados.archivo.ver');
     Route::get('radicados/{radicado}/adjuntos/descargar-todos/{tipo?}', [RadicadoController::class, 'descargarTodos'])->name('radicados.adjuntos.descargar-todos');
