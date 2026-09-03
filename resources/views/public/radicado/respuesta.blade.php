@@ -402,7 +402,7 @@
                             for (let i = 0; i < fileList.length; i++) {
                                 const file = fileList[i];
                                 if (file.size > maxSizeBytes) {
-                                    alert('El archivo ' + file.name + ' supera el límite de 10 MB.');
+                                    alert('El archivo ' + file.name + ' supera el límite de 10 MB. Por favor, comprímelo en un ZIP o RAR e inténtalo nuevamente.');
                                     continue;
                                 }
                                 if (!currentKeys.includes(file.name + '-' + file.size)) {
@@ -499,7 +499,7 @@
                                     Arrastra tus archivos aquí o haz clic
                                 </p>
                                 <p class="text-[11px] text-slate-500">
-                                    PDF, Word, Excel, Imágenes, ZIP (hasta 25 MB c/u)
+                                    PDF, Word, Excel, Imágenes, ZIP (hasta 10 MB c/u)
                                 </p>
                             </div>
                         </div>

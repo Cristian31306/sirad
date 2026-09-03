@@ -182,7 +182,7 @@
                                 for (let i = 0; i < fileList.length; i++) {
                                     const file = fileList[i];
                                     if (file.size > maxSizeBytes) {
-                                        alert('El archivo ' + file.name + ' supera el límite de 10 MB.');
+                                        alert('El archivo ' + file.name + ' supera el límite de 10 MB. Por favor, comprímelo en un ZIP o RAR e inténtalo nuevamente.');
                                         continue;
                                     }
                                     if (!currentKeys.includes(file.name + '-' + file.size)) {
@@ -274,7 +274,7 @@
                                         Haz clic para seleccionar o arrastra los archivos aquí
                                     </p>
                                     <p class="text-xs text-gray-500">
-                                        Soporta múltiples archivos: PDF, Word, Excel, Imágenes, ZIP (hasta 25 MB c/u)
+                                        Soporta múltiples archivos: PDF, Word, Excel, Imágenes, ZIP (hasta 10 MB c/u)
                                     </p>
                                 </div>
                             </div>

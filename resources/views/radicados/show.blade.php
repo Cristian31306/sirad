@@ -802,9 +802,15 @@
                                 salidaFiles: [],
                                 addFiles(fl) {
                                     const current = this.salidaFiles.map(f => f.name + '-' + f.size);
+                                    const maxSizeBytes = 10 * 1024 * 1024; // 10MB
                                     for (let i = 0; i < fl.length; i++) {
-                                        if (!current.includes(fl[i].name + '-' + fl[i].size)) {
-                                            this.salidaFiles.push(fl[i]);
+                                        const file = fl[i];
+                                        if (file.size > maxSizeBytes) {
+                                            alert('El archivo ' + file.name + ' supera el límite de 10 MB. Por favor, comprímelo en un ZIP o RAR e inténtalo nuevamente.');
+                                            continue;
+                                        }
+                                        if (!current.includes(file.name + '-' + file.size)) {
+                                            this.salidaFiles.push(file);
                                         }
                                     }
                                     this.sync();
@@ -874,7 +880,7 @@
                                             <i class="ph ph-upload-simple text-base"></i>
                                             <span>Seleccionar archivos de respuesta...</span>
                                         </div>
-                                        <p class="text-[10px] text-gray-400 mt-0.5">PDF, Word, Excel, Imágenes, ZIP (hasta 25 MB c/u)</p>
+                                        <p class="text-[10px] text-gray-400 mt-0.5">PDF, Word, Excel, Imágenes, ZIP (hasta 10 MB c/u)</p>
                                     </div>
 
                                     <!-- Lista de archivos seleccionados para salida -->
