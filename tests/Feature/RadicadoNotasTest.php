@@ -156,4 +156,40 @@ class RadicadoNotasTest extends TestCase
         $this->assertEquals($this->userOperativo->id, $nota->user_id);
         $this->assertStringContainsString('acelerar la entrega', $nota->contenido);
     }
+
+    public function test_soft_deleted_responsable_remains_visible_in_radicado(): void
+    {
+        $adjunto = $this->radicado->adjuntos()->create([
+            'tipo' => 'salida',
+            'path' => 'test/path.pdf',
+            'nombre_original' => 'informe.pdf',
+            'responsable_id' => $this->responsable1->id,
+        ]);
+
+        $nota = $this->radicado->notas()->create([
+            'responsable_id' => $this->responsable1->id,
+            'autor_nombre' => $this->responsable1->nombre,
+            'contenido' => 'Nota de prueba antes de ser eliminado del catalogo',
+        ]);
+
+        $this->radicado->update([
+            'respuesta_marcada_por' => $this->responsable1->id,
+        ]);
+
+        // Simular que el responsable es eliminado del catálogo general (soft delete)
+        $this->responsable1->delete();
+        $this->assertSoftDeleted('responsables', ['id' => $this->responsable1->id]);
+
+        // Verificar que en el radicado sigue apareciendo en responsables, adjuntos y notas
+        $this->radicado->refresh();
+        $this->assertTrue($this->radicado->responsables->contains('id', $this->responsable1->id));
+        $this->assertNotNull($this->radicado->respuestaMarcadaPor);
+        $this->assertEquals('Carlos Mendoza', $this->radicado->respuestaMarcadaPor->nombre);
+
+        $this->assertNotNull($adjunto->fresh()->responsable);
+        $this->assertEquals('Carlos Mendoza', $adjunto->fresh()->responsable->nombre);
+
+        $this->assertNotNull($nota->fresh()->responsable);
+        $this->assertEquals('Carlos Mendoza', $nota->fresh()->responsable->nombre);
+    }
 }

@@ -52,7 +52,8 @@ class Radicado extends Model
     public function responsables()
     {
         return $this->belongsToMany(Responsable::class, 'radicado_responsable')
-                    ->withPivot('hubo_rebote', 'fecha_rebote');
+                    ->withPivot('hubo_rebote', 'fecha_rebote')
+                    ->withTrashed();
     }
 
     public function anulador()
@@ -62,7 +63,7 @@ class Radicado extends Model
 
     public function tipoTramite()
     {
-        return $this->belongsTo(TipoTramite::class, 'tipo_tramite_id');
+        return $this->belongsTo(TipoTramite::class, 'tipo_tramite_id')->withTrashed();
     }
 
     public function adjuntos()
@@ -82,6 +83,6 @@ class Radicado extends Model
 
     public function respuestaMarcadaPor()
     {
-        return $this->belongsTo(Responsable::class, 'respuesta_marcada_por');
+        return $this->belongsTo(Responsable::class, 'respuesta_marcada_por')->withTrashed();
     }
 }

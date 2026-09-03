@@ -21,7 +21,7 @@ class RadicadoNota extends Model
 
     public function responsable()
     {
-        return $this->belongsTo(Responsable::class);
+        return $this->belongsTo(Responsable::class)->withTrashed();
     }
 
     public function user()

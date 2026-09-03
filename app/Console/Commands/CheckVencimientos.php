@@ -25,7 +25,7 @@ class CheckVencimientos extends Command
         $hoy = Carbon::now();
 
         foreach ($pendientes as $radicado) {
-            $fechaLimite = Carbon::parse($radicado->fecha_limite);
+            $fechaLimite = Carbon::parse($radicado->fecha_limite)->endOfDay();
 
             // Destinatarios según regla de negocio
             $usuarios = User::where('role', 'usuario')->pluck('email')->toArray();
@@ -51,14 +51,23 @@ class CheckVencimientos extends Command
                 continue;
             }
 
-            // Contar días hábiles desde hoy hasta la fecha límite
-            $diasFaltantes = 0;
-            $fechaTemp = $hoy->copy();
+            // Contar días faltantes según si es trámite en días calendario o hábiles
+            $esCalendario = $radicado->tipoTramite && $radicado->tipoTramite->tipo_dias === 'calendario';
 
-            while ($fechaTemp->lessThan($fechaLimite)) {
-                $fechaTemp->addDay();
-                if ($service->esDiaHabil($fechaTemp)) {
-                    $diasFaltantes++;
+            if ($esCalendario) {
+                // Para días calendario: diferencia directa en días
+                $diasFaltantes = (int) max(0, $hoy->diffInDays($fechaLimite, false));
+            } else {
+                // Para días hábiles: contar de lunes a viernes excluyendo festivos
+                $diasFaltantes = 0;
+                $fechaTemp = $hoy->copy()->startOfDay();
+                $fechaLimiteTemp = $fechaLimite->copy()->startOfDay();
+
+                while ($fechaTemp->lessThan($fechaLimiteTemp)) {
+                    $fechaTemp->addDay();
+                    if ($service->esDiaHabil($fechaTemp)) {
+                        $diasFaltantes++;
+                    }
                 }
             }
 

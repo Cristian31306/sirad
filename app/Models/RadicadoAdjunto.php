@@ -15,6 +15,6 @@ class RadicadoAdjunto extends Model
 
     public function responsable()
     {
-        return $this->belongsTo(Responsable::class);
+        return $this->belongsTo(Responsable::class)->withTrashed();
     }
 }
