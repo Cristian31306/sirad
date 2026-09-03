@@ -35,7 +35,7 @@ class StoreRadicadoRequest extends FormRequest
             'responsables' => 'required|array|min:1',
             'responsables.*' => 'exists:responsables,id',
             'archivos_entrada' => 'nullable|array|max:20',
-            'archivos_entrada.*' => 'file|max:25600|mimes:pdf,doc,docx,xls,xlsx,zip,rar,7z,jpg,jpeg,png',
+            'archivos_entrada.*' => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx,zip,rar,7z,jpg,jpeg,png',
         ];
     }
 
@@ -60,7 +60,7 @@ class StoreRadicadoRequest extends FormRequest
             'responsables.required' => 'Debe seleccionar al menos un funcionario responsable.',
             'responsables.min' => 'Debe seleccionar al menos un funcionario responsable.',
             'archivos_entrada.max' => 'No puedes subir más de 20 archivos al mismo tiempo.',
-            'archivos_entrada.*.max' => 'Cada archivo no puede superar los 25 MB.',
+            'archivos_entrada.*.max' => 'Cada archivo no puede superar los 10 MB.',
             'archivos_entrada.*.mimes' => 'Solo se permiten archivos en formato PDF, Word, Excel, Imágenes (JPG, PNG) o Comprimidos (ZIP, RAR, 7Z).',
         ];
     }

@@ -2,17 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreRadicadoRequest;
+use App\Http\Requests\UpdateRadicadoRequest;
 use App\Mail\NuevaRadicacionMail;
 use App\Models\Auditoria;
 use App\Models\Radicado;
+use App\Models\RadicadoAdjunto;
 use App\Models\Responsable;
 use App\Models\TipoTramite;
 use App\Services\DiasHabilesService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class RadicadoController extends Controller
 {
@@ -37,7 +42,7 @@ class RadicadoController extends Controller
             });
         }
 
-        if ($request->has('estado') && !empty($request->estado)) {
+        if ($request->has('estado') && ! empty($request->estado)) {
             $estados = (array) $request->estado;
             $query->whereIn('estado', $estados);
         }
@@ -50,17 +55,17 @@ class RadicadoController extends Controller
             $query->whereDate('fecha_radicacion', '<=', $request->fecha_fin);
         }
 
-        if ($request->has('prioridad') && !empty($request->prioridad)) {
+        if ($request->has('prioridad') && ! empty($request->prioridad)) {
             $prioridades = (array) $request->prioridad;
             $query->whereIn('prioridad', $prioridades);
         }
 
-        if ($request->has('tipo_tramite_id') && !empty($request->tipo_tramite_id)) {
+        if ($request->has('tipo_tramite_id') && ! empty($request->tipo_tramite_id)) {
             $tipos = (array) $request->tipo_tramite_id;
             $query->whereIn('tipo_tramite_id', $tipos);
         }
 
-        if ($request->has('responsable_id') && !empty($request->responsable_id)) {
+        if ($request->has('responsable_id') && ! empty($request->responsable_id)) {
             $responsables = (array) $request->responsable_id;
             $query->whereHas('responsables', function ($q) use ($responsables) {
                 $q->whereIn('responsables.id', $responsables);
@@ -82,8 +87,8 @@ class RadicadoController extends Controller
         $perPage = $request->get('per_page', 10);
         $radicados = $query->paginate($perPage)->withQueryString();
 
-        $responsables = \App\Models\Responsable::all();
-        $tiposTramites = \App\Models\TipoTramite::where('activo', true)->get();
+        $responsables = Responsable::all();
+        $tiposTramites = TipoTramite::where('activo', true)->get();
 
         return view('radicados.index', compact('radicados', 'sort', 'direction', 'responsables', 'tiposTramites'));
     }
@@ -115,13 +120,13 @@ class RadicadoController extends Controller
             foreach ($radicados as $r) {
                 fputcsv($file, [
                     $r->numero_radicado,
-                    $r->fecha_radicacion ? \Carbon\Carbon::parse($r->fecha_radicacion)->format('Y-m-d') : '',
+                    $r->fecha_radicacion ? Carbon::parse($r->fecha_radicacion)->format('Y-m-d') : '',
                     $r->remitente,
                     $r->asunto,
                     $r->medio,
                     $r->responsables->pluck('nombre')->implode(', ') ?: 'N/A',
                     strtoupper($r->estado),
-                    $r->fecha_limite ? \Carbon\Carbon::parse($r->fecha_limite)->format('Y-m-d') : '',
+                    $r->fecha_limite ? Carbon::parse($r->fecha_limite)->format('Y-m-d') : '',
                 ], ';');
             }
 
@@ -139,7 +144,7 @@ class RadicadoController extends Controller
         return view('radicados.create', compact('responsables', 'tiposTramites'));
     }
 
-    public function store(\App\Http\Requests\StoreRadicadoRequest $request)
+    public function store(StoreRadicadoRequest $request)
     {
         $tipoTramite = TipoTramite::findOrFail($request->tipo_tramite_id);
 
@@ -150,7 +155,7 @@ class RadicadoController extends Controller
             $fechaLimite = $this->diasHabilesService->calcularFechaLimite($fechaRadicacion, $tipoTramite->dias_habiles);
         }
 
-        $radicado = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $fechaRadicacion, $fechaLimite) {
+        $radicado = DB::transaction(function () use ($request, $fechaRadicacion, $fechaLimite) {
             $radicado = Radicado::create([
                 'numero_radicado' => $request->numero_radicado,
                 'fecha_radicacion' => $fechaRadicacion->toDateString(),
@@ -195,7 +200,7 @@ class RadicadoController extends Controller
         return redirect()->route('radicados.index')->with('success', 'Radicado creado correctamente. Asignado a: '.$nombresResponsables);
     }
 
-    public function update(\App\Http\Requests\UpdateRadicadoRequest $request, Radicado $radicado)
+    public function update(UpdateRadicadoRequest $request, Radicado $radicado)
     {
         $tipoTramite = TipoTramite::find($request->tipo_tramite_id);
         if ($tipoTramite->tipo_dias === 'calendario') {
@@ -204,7 +209,7 @@ class RadicadoController extends Controller
             $fechaLimite = $this->diasHabilesService->calcularFechaLimite(Carbon::parse($request->fecha_radicacion), $tipoTramite->dias_habiles);
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($radicado, $request, $fechaLimite) {
+        DB::transaction(function () use ($radicado, $request, $fechaLimite) {
             $radicado->update([
                 'numero_radicado' => $request->numero_radicado,
                 'fecha_radicacion' => Carbon::parse($request->fecha_radicacion)->toDateString(),
@@ -246,21 +251,21 @@ class RadicadoController extends Controller
 
         $request->validate([
             'archivos_salida' => 'nullable|array|max:20',
-            'archivos_salida.*' => 'nullable|file|max:25600|mimes:pdf,doc,docx,xls,xlsx,zip,rar,7z,jpg,jpeg,png',
+            'archivos_salida.*' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,zip,rar,7z,jpg,jpeg,png',
         ], [
             'archivos_salida.max' => 'No puedes subir más de 20 archivos al mismo tiempo.',
-            'archivos_salida.*.max' => 'Cada archivo no puede superar los 25 MB.',
+            'archivos_salida.*.max' => 'Cada archivo no puede superar los 10 MB.',
             'archivos_salida.*.mimes' => 'Solo se permiten archivos en formato PDF, Word, Excel, Imágenes (JPG, PNG) o Comprimidos (ZIP, RAR, 7Z).',
         ]);
 
         $marcarCompletado = $request->input('accion', 'completar') === 'completar';
 
         // Si se eligió solo adjuntar sin completar, debe haber seleccionado al menos un archivo
-        if (!$marcarCompletado && !$request->hasFile('archivos_salida')) {
+        if (! $marcarCompletado && ! $request->hasFile('archivos_salida')) {
             return back()->with('error', 'Debe seleccionar al menos un archivo para adjuntar.');
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($radicado, $request, $marcarCompletado) {
+        DB::transaction(function () use ($radicado, $request, $marcarCompletado) {
             if ($marcarCompletado) {
                 $radicado->update([
                     'estado' => 'completado',
@@ -282,8 +287,8 @@ class RadicadoController extends Controller
             }
         });
 
-        $msg = $marcarCompletado 
-            ? 'Trámite completado y cerrado correctamente.' 
+        $msg = $marcarCompletado
+            ? 'Trámite completado y cerrado correctamente.'
             : 'Documento(s) de respuesta guardado(s) exitosamente. El radicado continúa abierto.';
 
         return redirect()->route('radicados.show', $radicado)->with('success', $msg);
@@ -392,15 +397,15 @@ class RadicadoController extends Controller
         $zipFileName = "{$cleanRadicadoNum}{$tipoSuffix}.zip";
         $tempZipPath = tempnam(sys_get_temp_dir(), 'sirad_zip_');
 
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             return back()->with('error', 'No se pudo generar el archivo comprimido.');
         }
 
         $usedNames = [];
         foreach ($adjuntos as $adjunto) {
-            if ($adjunto->path && \Illuminate\Support\Facades\Storage::disk('local')->exists($adjunto->path)) {
-                $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($adjunto->path);
+            if ($adjunto->path && Storage::disk('local')->exists($adjunto->path)) {
+                $fullPath = Storage::disk('local')->path($adjunto->path);
                 $originalName = $adjunto->nombre_original ?: basename($adjunto->path);
 
                 $entryName = $originalName;
@@ -408,7 +413,7 @@ class RadicadoController extends Controller
                 while (in_array($entryName, $usedNames)) {
                     $info = pathinfo($originalName);
                     $namePart = $info['filename'];
-                    $extPart = isset($info['extension']) ? '.' . $info['extension'] : '';
+                    $extPart = isset($info['extension']) ? '.'.$info['extension'] : '';
                     $entryName = "{$namePart} ({$counter}){$extPart}";
                     $counter++;
                 }
@@ -423,24 +428,24 @@ class RadicadoController extends Controller
         return response()->download($tempZipPath, $zipFileName)->deleteFileAfterSend(true);
     }
 
-    public function downloadArchivo(\App\Models\RadicadoAdjunto $adjunto)
+    public function downloadArchivo(RadicadoAdjunto $adjunto)
     {
-        if (! $adjunto->path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($adjunto->path)) {
+        if (! $adjunto->path || ! Storage::disk('local')->exists($adjunto->path)) {
             abort(404, 'El archivo solicitado no existe.');
         }
 
         $nombreDescarga = $adjunto->nombre_original ?: basename($adjunto->path);
 
-        return \Illuminate\Support\Facades\Storage::disk('local')->download($adjunto->path, $nombreDescarga);
+        return Storage::disk('local')->download($adjunto->path, $nombreDescarga);
     }
 
-    public function verArchivo(\App\Models\RadicadoAdjunto $adjunto)
+    public function verArchivo(RadicadoAdjunto $adjunto)
     {
-        if (! $adjunto->path || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($adjunto->path)) {
+        if (! $adjunto->path || ! Storage::disk('local')->exists($adjunto->path)) {
             abort(404, 'El archivo solicitado no existe.');
         }
 
-        $fullPath = \Illuminate\Support\Facades\Storage::disk('local')->path($adjunto->path);
+        $fullPath = Storage::disk('local')->path($adjunto->path);
         $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
 
         return response()->file($fullPath, [
@@ -457,7 +462,7 @@ class RadicadoController extends Controller
             'motivo_anulacion' => 'required|string|max:255',
         ]);
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($radicado, $request) {
+        DB::transaction(function () use ($radicado, $request) {
             $radicado->update([
                 'estado' => 'anulado',
                 'motivo_anulacion' => $request->motivo_anulacion,
@@ -474,11 +479,11 @@ class RadicadoController extends Controller
 
         $numeroRadicado = $radicado->numero_radicado;
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($radicado) {
+        DB::transaction(function () use ($radicado) {
             // 1. Eliminar archivos físicos en storage y registros de adjuntos
             foreach ($radicado->adjuntos as $adjunto) {
-                if ($adjunto->path && \Illuminate\Support\Facades\Storage::disk('local')->exists($adjunto->path)) {
-                    \Illuminate\Support\Facades\Storage::disk('local')->delete($adjunto->path);
+                if ($adjunto->path && Storage::disk('local')->exists($adjunto->path)) {
+                    Storage::disk('local')->delete($adjunto->path);
                 }
                 $adjunto->delete();
             }

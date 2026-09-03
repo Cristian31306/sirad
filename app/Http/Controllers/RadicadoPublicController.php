@@ -17,7 +17,7 @@ class RadicadoPublicController extends Controller
 {
     public function showRespuestaForm(Request $request, Radicado $radicado, Responsable $responsable)
     {
-        if (!$request->hasValidSignature()) {
+        if (! $request->hasValidSignature()) {
             abort(403, 'Enlace no válido o ha expirado.');
         }
 
@@ -39,7 +39,7 @@ class RadicadoPublicController extends Controller
 
     public function storeRespuesta(Request $request, Radicado $radicado, Responsable $responsable)
     {
-        if (!$request->hasValidSignature()) {
+        if (! $request->hasValidSignature()) {
             abort(403, 'Enlace no válido o ha expirado.');
         }
 
@@ -49,20 +49,20 @@ class RadicadoPublicController extends Controller
 
         $request->validate([
             'archivos_salida' => 'nullable|array|max:20',
-            'archivos_salida.*' => 'file|max:25600|mimes:pdf,doc,docx,xls,xlsx,zip,rar,7z,jpg,jpeg,png',
+            'archivos_salida.*' => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx,zip,rar,7z,jpg,jpeg,png',
             'nota' => 'nullable|string|max:3000',
             'estado_entrega' => 'nullable|in:avance,finalizar',
         ], [
             'archivos_salida.max' => 'No puedes subir más de 20 archivos a la vez.',
-            'archivos_salida.*.max' => 'Cada archivo no puede superar los 25 MB.',
+            'archivos_salida.*.max' => 'Cada archivo no puede superar los 10 MB.',
             'archivos_salida.*.mimes' => 'Formato no válido. Solo se permiten PDF, Word, Excel, Imágenes (JPG, PNG) o ZIP/RAR.',
             'nota.max' => 'La nota no puede superar los 3000 caracteres.',
         ]);
 
         $tieneArchivos = $request->hasFile('archivos_salida');
-        $tieneNota = !empty(trim($request->input('nota', '')));
+        $tieneNota = ! empty(trim($request->input('nota', '')));
 
-        if (!$tieneArchivos && !$tieneNota) {
+        if (! $tieneArchivos && ! $tieneNota) {
             return back()->with('error', 'Debe adjuntar al menos un archivo o escribir una nota de avance.');
         }
 
@@ -136,7 +136,7 @@ class RadicadoPublicController extends Controller
 
     public function downloadAdjunto(Request $request, Radicado $radicado, Responsable $responsable, RadicadoAdjunto $adjunto)
     {
-        if (!$request->hasValidSignature()) {
+        if (! $request->hasValidSignature()) {
             abort(403, 'Enlace no válido o ha expirado.');
         }
 
@@ -144,7 +144,7 @@ class RadicadoPublicController extends Controller
             abort(404, 'Archivo no encontrado en este radicado.');
         }
 
-        if (!Storage::disk('local')->exists($adjunto->path)) {
+        if (! Storage::disk('local')->exists($adjunto->path)) {
             abort(404, 'El archivo no existe físicamente en el servidor.');
         }
 
@@ -153,7 +153,7 @@ class RadicadoPublicController extends Controller
 
     public function verAdjunto(Request $request, Radicado $radicado, Responsable $responsable, RadicadoAdjunto $adjunto)
     {
-        if (!$request->hasValidSignature()) {
+        if (! $request->hasValidSignature()) {
             abort(403, 'Enlace no válido o ha expirado.');
         }
 
@@ -161,7 +161,7 @@ class RadicadoPublicController extends Controller
             abort(404, 'Archivo no encontrado en este radicado.');
         }
 
-        if (!Storage::disk('local')->exists($adjunto->path)) {
+        if (! Storage::disk('local')->exists($adjunto->path)) {
             abort(404, 'El archivo no existe físicamente en el servidor.');
         }
 
@@ -176,7 +176,7 @@ class RadicadoPublicController extends Controller
 
     public function descargarTodos(Request $request, Radicado $radicado, Responsable $responsable, ?string $tipo = null)
     {
-        if (!$request->hasValidSignature()) {
+        if (! $request->hasValidSignature()) {
             abort(403, 'Enlace no válido o ha expirado.');
         }
 
@@ -193,12 +193,12 @@ class RadicadoPublicController extends Controller
 
         $zipFileName = 'radicado_'.$radicado->numero_radicado.'_'.($tipo ?? 'adjuntos').'_'.time().'.zip';
         $zipDirectory = storage_path('app/temp');
-        if (!file_exists($zipDirectory)) {
+        if (! file_exists($zipDirectory)) {
             mkdir($zipDirectory, 0755, true);
         }
         $zipPath = $zipDirectory.'/'.$zipFileName;
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             return back()->with('error', 'No se pudo generar el archivo ZIP comprimido.');
         }
