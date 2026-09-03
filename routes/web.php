@@ -62,6 +62,9 @@ require __DIR__.'/auth.php';
 Route::middleware('signed')->group(function () {
     Route::get('radicados/{radicado}/responsable/{responsable}/respuesta', [\App\Http\Controllers\RadicadoPublicController::class, 'showRespuestaForm'])->name('radicados.public.respuesta');
     Route::post('radicados/{radicado}/responsable/{responsable}/respuesta', [\App\Http\Controllers\RadicadoPublicController::class, 'storeRespuesta'])->name('radicados.public.respuesta.store');
+    Route::get('radicados/{radicado}/responsable/{responsable}/adjuntos/{adjunto}/descargar', [\App\Http\Controllers\RadicadoPublicController::class, 'downloadAdjunto'])->name('radicados.public.adjuntos.descargar');
+    Route::get('radicados/{radicado}/responsable/{responsable}/adjuntos/{adjunto}/ver', [\App\Http\Controllers\RadicadoPublicController::class, 'verAdjunto'])->name('radicados.public.adjuntos.ver');
+    Route::get('radicados/{radicado}/responsable/{responsable}/adjuntos/descargar-todos/{tipo?}', [\App\Http\Controllers\RadicadoPublicController::class, 'descargarTodos'])->name('radicados.public.adjuntos.descargar-todos');
 });
 
 // Webhook Brevo (sin CSRF)

@@ -1,90 +1,399 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="h-full bg-slate-50">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subir Respuesta - Radicado {{ $radicado->numero_radicado }}</title>
+    <title>Respuesta a Radicado {{ $radicado->numero_radicado }} - SIRAD</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
     <style>
-        body { background-color: #f3f4f6; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Subir Respuesta a Radicado
-        </h2>
-        <p class="mt-2 text-center text-sm text-gray-600">
-            Radicado No. {{ $radicado->numero_radicado }}
-        </p>
-    </div>
-
-    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            @if(session('error'))
-                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                    <span class="block sm:inline">{{ session('error') }}</span>
+<body class="min-h-full flex flex-col justify-between text-slate-800 antialiased selection:bg-blue-500 selection:text-white pb-12">
+    
+    <!-- Top Bar Navigation / Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xl shadow-md shadow-blue-500/20">
+                    S
                 </div>
-            @endif
-
-            @if($errors->any())
-                <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                    <ul>
-                        @foreach ($errors->all() as $error)
-                            <li>- {{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
-
-            <form class="space-y-6" action="{{ URL::signedRoute('radicados.public.respuesta.store', ['radicado' => $radicado->id, 'responsable' => $responsable->id]) }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                
                 <div>
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Detalles del Trámite</h3>
-                    <div class="mt-2 max-w-xl text-sm text-gray-500">
-                        <p><strong>Asunto:</strong> {{ $radicado->asunto }}</p>
-                        <p><strong>Remitente:</strong> {{ $radicado->remitente }}</p>
-                        <p><strong>Responsable:</strong> {{ $responsable->nombre }}</p>
+                    <h1 class="font-bold text-base text-slate-900 leading-tight">SIRAD</h1>
+                    <p class="text-[11px] text-slate-500 font-medium">Sistema de Radicación y Correspondencia</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                <i class="ph ph-shield-check text-base text-emerald-600"></i>
+                <span class="hidden sm:inline">Enlace Seguro y Verificado</span>
+                <span class="sm:hidden">Seguro</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <!-- Alerts -->
+        @if(session('error'))
+            <div class="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3.5 rounded-2xl flex items-center gap-3 text-sm shadow-xs">
+                <i class="ph ph-warning-circle text-xl shrink-0 text-red-600"></i>
+                <p class="font-medium">{{ session('error') }}</p>
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="mb-6 bg-red-50 border border-red-200 text-red-700 p-4 rounded-2xl text-sm shadow-xs">
+                <div class="flex items-center gap-2 font-bold mb-2">
+                    <i class="ph ph-warning-circle text-lg"></i>
+                    <span>Por favor corrija los siguientes errores:</span>
+                </div>
+                <ul class="list-disc list-inside space-y-1 pl-1 text-xs">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <!-- Radicado Banner -->
+        <div class="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-blue-900/10 mb-8 relative overflow-hidden">
+            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2.5 mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-white/20 text-white backdrop-blur-xs">
+                            Radicado Oficial
+                        </span>
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-md bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">
+                            {{ ucfirst($radicado->prioridad) }} Prioridad
+                        </span>
                     </div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">{{ $radicado->numero_radicado }}</h2>
+                    <p class="text-sm text-blue-100 mt-1 max-w-2xl font-medium leading-relaxed">
+                        {{ $radicado->asunto }}
+                    </p>
                 </div>
 
-                <div>
-                    <label for="archivo_salida" class="block text-sm font-medium text-gray-700">
-                        Documento de Respuesta (PDF, DOCX, etc.)
-                    </label>
-                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                        <div class="space-y-1 text-center">
-                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
-                            <div class="flex text-sm text-gray-600 justify-center">
-                                <label for="archivo_salida" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
-                                    <span>Seleccionar un archivo</span>
-                                    <input id="archivo_salida" name="archivo_salida" type="file" class="sr-only" required>
-                                </label>
+                <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 min-w-[200px] shrink-0">
+                    <span class="block text-[11px] font-semibold text-blue-200 uppercase tracking-wider">Fecha Límite</span>
+                    <span class="block text-lg font-bold text-white mt-0.5">
+                        {{ \Carbon\Carbon::parse($radicado->fecha_limite)->format('d/m/Y') }}
+                    </span>
+                    <span class="block text-[11px] text-blue-200 mt-1">
+                        Asignado a: <strong class="text-white">{{ $responsable->nombre }}</strong>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid Layout: Info + Received Documents (Left) and Response Uploader (Right) -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- Left Column: Detalles y Documentos Recibidos (7 cols) -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- Card: Información del Radicado -->
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs">
+                    <h3 class="text-base font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <i class="ph ph-info text-blue-600 text-lg"></i>
+                        Detalles del Trámite
+                    </h3>
+
+                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                        <div class="p-3 bg-slate-50 rounded-xl">
+                            <dt class="text-slate-400 font-semibold mb-0.5">Remitente</dt>
+                            <dd class="font-bold text-slate-800 text-sm">{{ $radicado->remitente }}</dd>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl">
+                            <dt class="text-slate-400 font-semibold mb-0.5">Empresa / Entidad</dt>
+                            <dd class="font-bold text-slate-800 text-sm">{{ $radicado->empresa ?: 'Persona Natural' }}</dd>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl">
+                            <dt class="text-slate-400 font-semibold mb-0.5">Tipo de Trámite</dt>
+                            <dd class="font-bold text-slate-800 text-sm">{{ optional($radicado->tipoTramite)->nombre ?: 'General' }}</dd>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl">
+                            <dt class="text-slate-400 font-semibold mb-0.5">Fecha de Radicación</dt>
+                            <dd class="font-bold text-slate-800 text-sm">{{ \Carbon\Carbon::parse($radicado->fecha_radicacion)->format('d/m/Y') }}</dd>
+                        </div>
+                        @if($radicado->observaciones)
+                        <div class="sm:col-span-2 p-3 bg-slate-50 rounded-xl">
+                            <dt class="text-slate-400 font-semibold mb-0.5">Observaciones</dt>
+                            <dd class="text-slate-700 leading-relaxed">{{ $radicado->observaciones }}</dd>
+                        </div>
+                        @endif
+                    </dl>
+                </div>
+
+                <!-- Card: Documentos Adjuntos Recibidos (Entrada) -->
+                @php
+                    $entradas = $radicado->adjuntos()->where('tipo', 'entrada')->get();
+                @endphp
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i class="ph ph-folder text-blue-600 text-lg"></i>
+                            Documentos de Entrada / Anexos
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold ml-1">
+                                {{ $entradas->count() }}
+                            </span>
+                        </h3>
+
+                        @if($entradas->count() >= 2)
+                        <a href="{{ URL::signedRoute('radicados.public.adjuntos.descargar-todos', ['radicado' => $radicado->id, 'responsable' => $responsable->id, 'tipo' => 'entrada']) }}" 
+                           class="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200/60 transition">
+                            <i class="ph ph-archive text-sm"></i>
+                            Descargar todos (.ZIP)
+                        </a>
+                        @endif
+                    </div>
+
+                    @if($entradas->isEmpty())
+                        <div class="p-6 text-center bg-slate-50 rounded-2xl border border-slate-100">
+                            <i class="ph ph-file-dashed text-3xl text-slate-400 mb-2"></i>
+                            <p class="text-xs text-slate-500">No se adjuntaron documentos iniciales en este radicado.</p>
+                        </div>
+                    @else
+                        <div class="space-y-2.5">
+                            @foreach($entradas as $adjunto)
+                                @php
+                                    $ext = strtolower(pathinfo($adjunto->nombre_original, PATHINFO_EXTENSION));
+                                    $iconClass = 'ph-file-text text-slate-600 bg-slate-100';
+                                    if ($ext === 'pdf') $iconClass = 'ph-file-pdf text-red-600 bg-red-50';
+                                    elseif (in_array($ext, ['doc', 'docx'])) $iconClass = 'ph-file-doc text-blue-600 bg-blue-50';
+                                    elseif (in_array($ext, ['xls', 'xlsx', 'csv'])) $iconClass = 'ph-file-xls text-emerald-600 bg-emerald-50';
+                                    elseif (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) $iconClass = 'ph-file-image text-indigo-600 bg-indigo-50';
+                                    elseif (in_array($ext, ['zip', 'rar', '7z'])) $iconClass = 'ph-file-zip text-amber-600 bg-amber-50';
+
+                                    $sizeBytes = 0;
+                                    if (\Illuminate\Support\Facades\Storage::disk('local')->exists($adjunto->path)) {
+                                        $sizeBytes = filesize(\Illuminate\Support\Facades\Storage::disk('local')->path($adjunto->path));
+                                    }
+                                    $sizeStr = $sizeBytes > 1048576 
+                                        ? round($sizeBytes / 1048576, 1) . ' MB' 
+                                        : round($sizeBytes / 1024, 0) . ' KB';
+                                @endphp
+                                <div class="p-3 bg-slate-50 hover:bg-blue-50/40 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 transition group">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 {{ $iconClass }}">
+                                            <i class="ph {{ explode(' ', $iconClass)[0] }}"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-bold text-slate-800 truncate group-hover:text-blue-700 transition" title="{{ $adjunto->nombre_original }}">
+                                                {{ $adjunto->nombre_original }}
+                                            </p>
+                                            <div class="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
+                                                <span class="uppercase font-bold text-slate-500">{{ $ext }}</span>
+                                                <span>•</span>
+                                                <span>{{ $sizeStr }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-1.5 shrink-0">
+                                        <!-- Ver archivo -->
+                                        <a href="{{ URL::signedRoute('radicados.public.adjuntos.ver', ['radicado' => $radicado->id, 'responsable' => $responsable->id, 'adjunto' => $adjunto->id]) }}" 
+                                           target="_blank"
+                                           class="inline-flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-blue-600 bg-white hover:bg-slate-100 border border-slate-200 px-2.5 py-1.5 rounded-xl shadow-2xs transition"
+                                           title="Ver en el navegador">
+                                            <i class="ph ph-eye text-sm"></i>
+                                            <span class="hidden sm:inline">Ver</span>
+                                        </a>
+
+                                        <!-- Descargar archivo -->
+                                        <a href="{{ URL::signedRoute('radicados.public.adjuntos.descargar', ['radicado' => $radicado->id, 'responsable' => $responsable->id, 'adjunto' => $adjunto->id]) }}" 
+                                           class="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-white hover:bg-blue-600 bg-white border border-blue-200 px-2.5 py-1.5 rounded-xl shadow-2xs transition"
+                                           title="Descargar archivo">
+                                            <i class="ph ph-download-simple text-sm"></i>
+                                            <span class="hidden sm:inline">Descargar</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Right Column: Subida de Respuesta (5 cols) -->
+            <div class="lg:col-span-5">
+                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-lg shadow-slate-200/50 sticky top-24"
+                     x-data="{
+                        files: [],
+                        isDragging: false,
+                        addFiles(fileList) {
+                            const currentKeys = this.files.map(f => f.name + '-' + f.size);
+                            for (let i = 0; i < fileList.length; i++) {
+                                const file = fileList[i];
+                                if (!currentKeys.includes(file.name + '-' + file.size)) {
+                                    this.files.push(file);
+                                }
+                            }
+                            this.syncInput();
+                        },
+                        removeFile(index) {
+                            this.files.splice(index, 1);
+                            this.syncInput();
+                        },
+                        clearAll() {
+                            this.files = [];
+                            this.syncInput();
+                        },
+                        syncInput() {
+                            const dt = new DataTransfer();
+                            this.files.forEach(f => dt.items.add(f));
+                            this.$refs.submitInput.files = dt.files;
+                        },
+                        formatBytes(bytes) {
+                            if (!bytes || bytes === 0) return '0 B';
+                            const k = 1024;
+                            const sizes = ['B', 'KB', 'MB', 'GB'];
+                            const i = Math.floor(Math.log(bytes) / Math.log(k));
+                            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+                        },
+                        getTotalSize() {
+                            const total = this.files.reduce((acc, f) => acc + f.size, 0);
+                            return this.formatBytes(total);
+                        },
+                        getFileTheme(name) {
+                            const ext = name.split('.').pop().toLowerCase();
+                            if (ext === 'pdf') return { icon: 'ph-file-pdf', color: 'text-red-600 bg-red-50' };
+                            if (['doc', 'docx'].includes(ext)) return { icon: 'ph-file-doc', color: 'text-blue-600 bg-blue-50' };
+                            if (['xls', 'xlsx', 'csv'].includes(ext)) return { icon: 'ph-file-xls', color: 'text-emerald-600 bg-emerald-50' };
+                            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return { icon: 'ph-file-image', color: 'text-indigo-600 bg-indigo-50' };
+                            if (['zip', 'rar', '7z'].includes(ext)) return { icon: 'ph-file-zip', color: 'text-amber-600 bg-amber-50' };
+                            return { icon: 'ph-file-text', color: 'text-slate-600 bg-slate-50' };
+                        }
+                     }">
+                    
+                    <div class="mb-5">
+                        <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-3">
+                            <i class="ph ph-upload-simple font-bold"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 leading-tight">Subir Documento(s) de Respuesta</h3>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+                            Adjunta uno o varios documentos oficiales que den respuesta al radicado (oficios, memorandos, actas, etc.).
+                        </p>
+                    </div>
+
+                    <form action="{{ URL::signedRoute('radicados.public.respuesta.store', ['radicado' => $radicado->id, 'responsable' => $responsable->id]) }}" 
+                          method="POST" 
+                          enctype="multipart/form-data">
+                        @csrf
+
+                        <!-- Real file input submitted in POST -->
+                        <input 
+                            x-ref="submitInput" 
+                            type="file" 
+                            name="archivos_salida[]" 
+                            multiple 
+                            class="hidden">
+
+                        <!-- Hidden picker input to trigger system dialog without clearing submitInput -->
+                        <input 
+                            x-ref="pickerInput" 
+                            type="file" 
+                            multiple 
+                            class="hidden" 
+                            @change="addFiles($event.target.files); $event.target.value = ''">
+
+                        <!-- Dropzone Area -->
+                        <div 
+                            @dragover.prevent="isDragging = true"
+                            @dragleave.prevent="isDragging = false"
+                            @drop.prevent="isDragging = false; addFiles($event.dataTransfer.files)"
+                            @click="$refs.pickerInput.click()"
+                            :class="isDragging ? 'border-blue-500 bg-blue-50/70 ring-2 ring-blue-400/30' : 'border-slate-300 hover:border-blue-400 bg-slate-50/60'"
+                            class="border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer group relative">
+                            
+                            <div class="flex flex-col items-center justify-center pointer-events-none">
+                                <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-xs">
+                                    <i class="ph ph-cloud-arrow-up text-2xl"></i>
+                                </div>
+                                <p class="text-sm font-bold text-slate-800 mb-1">
+                                    Arrastra tus archivos aquí o haz clic
+                                </p>
+                                <p class="text-xs text-slate-500">
+                                    Soporta múltiples archivos: PDF, Word, Excel, Imágenes, ZIP (hasta 25 MB c/u)
+                                </p>
                             </div>
-                            <p class="text-xs text-gray-500" id="file-name">
-                                Ningún archivo seleccionado (Max. 10MB)
+                        </div>
+
+                        <!-- Selected Files Preview List -->
+                        <template x-if="files.length > 0">
+                            <div class="mt-4 space-y-2.5">
+                                <div class="flex items-center justify-between text-xs text-slate-500 border-b border-slate-100 pb-2">
+                                    <span class="font-bold text-slate-700 flex items-center gap-1.5">
+                                        <i class="ph ph-check-circle text-emerald-600"></i>
+                                        <span x-text="files.length + ' archivo(s) listo(s)'"></span>
+                                        (<span x-text="getTotalSize()"></span>)
+                                    </span>
+                                    <button type="button" @click="clearAll()" class="text-red-500 hover:text-red-700 font-semibold hover:underline">
+                                        Quitar todos
+                                    </button>
+                                </div>
+
+                                <div class="max-h-56 overflow-y-auto space-y-2 pr-1">
+                                    <template x-for="(file, index) in files" :key="file.name + '-' + file.size">
+                                        <div class="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between gap-3 text-xs">
+                                            <div class="flex items-center gap-2.5 min-w-0">
+                                                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-lg shrink-0" :class="getFileTheme(file.name).color">
+                                                    <i class="ph" :class="getFileTheme(file.name).icon"></i>
+                                                </div>
+                                                <div class="min-w-0">
+                                                    <p class="font-semibold text-slate-800 truncate" x-text="file.name"></p>
+                                                    <span class="text-[10px] text-slate-400 font-medium" x-text="formatBytes(file.size)"></span>
+                                                </div>
+                                            </div>
+                                            <button type="button" @click="removeFile(index)" class="text-slate-400 hover:text-red-600 p-1 rounded-md transition" title="Eliminar">
+                                                <i class="ph ph-trash text-base"></i>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Submit Button -->
+                        <div class="mt-6">
+                            <button type="submit" 
+                                    :disabled="files.length === 0"
+                                    :class="files.length === 0 ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99]'"
+                                    class="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-white font-bold text-sm shadow-md shadow-blue-500/20 transition-all">
+                                <i class="ph ph-paper-plane-tilt text-lg"></i>
+                                <span>Enviar Respuesta(s)</span>
+                            </button>
+                            <p class="text-[11px] text-slate-400 text-center mt-2.5">
+                                Al enviar, el trámite quedará marcado como <strong>Completado</strong> en el sistema.
                             </p>
                         </div>
-                    </div>
+                    </form>
                 </div>
+            </div>
 
-                <div>
-                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        Subir y Enviar Respuesta
-                    </button>
-                </div>
-            </form>
         </div>
-    </div>
 
-    <script>
-        document.getElementById('archivo_salida').addEventListener('change', function(e) {
-            var fileName = e.target.files[0] ? e.target.files[0].name : 'Ningún archivo seleccionado';
-            document.getElementById('file-name').textContent = fileName;
-        });
-    </script>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-400 py-6 border-t border-slate-200 mt-12 w-full">
+        <p>© {{ date('Y') }} SIRAD - Sistema de Radicación y Gestión Documental.</p>
+    </footer>
+
 </body>
 </html>
