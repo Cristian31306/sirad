@@ -200,7 +200,8 @@
                                     }
                                 }
                                 this.syncInput();
-                                  removeFile(index) {
+                            },
+                            removeFile(index) {
                                 this.files.splice(index, 1);
                                 this.syncInput();
                             },
