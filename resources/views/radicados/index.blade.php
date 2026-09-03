@@ -265,6 +265,10 @@
                                 {{ $radicado->fecha_radicacion->format('d/m/Y') }}
                             </td>
                             <td class="px-6 py-4">
+                                {{ Str::limit($radicado->remitente, 25) }}<br>
+                                <span class="text-xs text-gray-500">{{ Str::limit($radicado->empresa, 25) }}</span>
+                            </td>
+                            <td class="px-6 py-4">
                                 <div class="flex flex-col gap-1">
                                     @forelse($radicado->responsables as $resp)
                                         <span class="inline-flex items-center gap-1.5 flex-wrap">

@@ -288,6 +288,8 @@
                 </div>
             </div>
             @endcan
+        </div>
+    </div>
 
     @php
         $rebotes = $radicado->responsables->filter(fn($r) => $r->pivot->hubo_rebote);
