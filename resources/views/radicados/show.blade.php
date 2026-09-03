@@ -101,7 +101,9 @@
                                     <label class="block text-sm font-semibold text-gray-700 mb-1">Tipo de Trámite</label>
                                     <select name="tipo_tramite_id" class="w-full border-gray-300 rounded-xl" required>
                                         @foreach($tiposTramites as $tipo)
-                                            <option value="{{ $tipo->id }}" {{ $radicado->tipo_tramite_id == $tipo->id ? 'selected' : '' }}>{{ $tipo->nombre }}</option>
+                                            <option value="{{ $tipo->id }}" {{ $radicado->tipo_tramite_id == $tipo->id ? 'selected' : '' }}>
+                                                {{ $tipo->nombre }} ({{ $tipo->dias_habiles }} días {{ $tipo->tipo_dias === 'calendario' ? 'calendario' : 'hábiles' }})
+                                            </option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -375,10 +377,15 @@
                 </div>
                 <div>
                     <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Tipo / Medio / Prioridad</span>
-                    <p class="font-medium text-gray-900">
-                        {{ optional($radicado->tipoTramite)->nombre }}
+                    <p class="font-medium text-gray-900 flex items-center gap-2 flex-wrap">
+                        <span>{{ optional($radicado->tipoTramite)->nombre }}</span>
+                        @if($radicado->tipoTramite)
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full {{ $radicado->tipoTramite->tipo_dias === 'calendario' ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-blue-100 text-blue-800 border border-blue-200' }}">
+                                {{ $radicado->tipoTramite->dias_habiles }} días {{ $radicado->tipoTramite->tipo_dias === 'calendario' ? 'calendario' : 'hábiles' }}
+                            </span>
+                        @endif
                     </p>
-                    <p class="text-xs text-gray-600">{{ $radicado->medio }} | Prioridad: <span class="font-bold">{{ $radicado->prioridad }}</span></p>
+                    <p class="text-xs text-gray-600 mt-0.5">{{ $radicado->medio }} | Prioridad: <span class="font-bold">{{ $radicado->prioridad }}</span></p>
                 </div>
                 <div>
                     <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Asunto</span>

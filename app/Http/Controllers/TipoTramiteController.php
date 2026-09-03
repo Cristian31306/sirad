@@ -22,6 +22,10 @@ class TipoTramiteController extends Controller
             $query->where('nombre', 'like', "%{$search}%");
         }
 
+        if ($request->filled('tipo_dias') && in_array($request->tipo_dias, ['habiles', 'calendario'])) {
+            $query->where('tipo_dias', $request->tipo_dias);
+        }
+
         $sort = $request->get('sort', 'nombre');
         $direction = $request->get('direction', 'asc');
         $query->orderBy($sort, $direction);

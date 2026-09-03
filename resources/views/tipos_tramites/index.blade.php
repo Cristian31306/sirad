@@ -5,7 +5,7 @@
                 <h2 class="font-bold text-2xl text-gray-800 tracking-tight">
                     Tipos de Trámite
                 </h2>
-                <p class="text-gray-500 text-sm mt-1">Configuración de los diferentes trámites y sus días hábiles.</p>
+                <p class="text-gray-500 text-sm mt-1">Configuración de los tipos de trámites y sus tiempos de respuesta (días hábiles o calendario).</p>
             </div>
         </div>
     </x-slot>
@@ -24,16 +24,25 @@
                 </div>
 
                 <div>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Tipo de Días</label>
+                    <select name="tipo_dias" class="border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:ring-blue-500 bg-white shadow-sm py-2 px-4 pr-8">
+                        <option value="">Todos los tipos</option>
+                        <option value="habiles" {{ request('tipo_dias') == 'habiles' ? 'selected' : '' }}>Hábiles</option>
+                        <option value="calendario" {{ request('tipo_dias') == 'calendario' ? 'selected' : '' }}>Calendario</option>
+                    </select>
+                </div>
+
+                <div>
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Mostrar</label>
                     <select name="per_page" class="border-gray-200 rounded-xl text-sm focus:border-blue-500 focus:ring-blue-500 bg-white shadow-sm py-2 px-4 pr-8">
                         <option value="10" {{ request('per_page', 10) == 10 ? 'selected' : '' }}>10 por página</option>
-                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 por página</option>
-                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 por página</option>
+                        <option value="25" {{ request('per_page', 25) == 25 ? 'selected' : '' }}>25 por página</option>
+                        <option value="50" {{ request('per_page', 50) == 50 ? 'selected' : '' }}>50 por página</option>
                     </select>
                 </div>
 
                 <div class="flex items-end">
-                    <button type="submit" class="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-xl shadow-sm flex items-center gap-2 transition-all h-10">
+                    <button type="submit" class="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-xl shadow-sm flex items-center gap-2 transition-all h-10 cursor-pointer">
                         <i class="ph ph-funnel"></i> Filtrar
                     </button>
                 </div>
@@ -59,8 +68,8 @@
                             </a>
                         </th>
                         <th class="px-6 py-4 font-semibold">
-                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'dias_habiles', 'direction' => request('sort') == 'dias_habiles' && request('direction') == 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-800">
-                                Días Hábiles
+                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'dias_habiles', 'direction' => request('sort') == 'dias_habiles' && request('direction', 'asc') == 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-800">
+                                Tiempo de Respuesta
                                 @if(request('sort') == 'dias_habiles')
                                     <i class="ph ph-caret-{{ request('direction') == 'asc' ? 'up' : 'down' }}"></i>
                                 @endif
@@ -74,7 +83,20 @@
                     @forelse($tipos as $tipo)
                         <tr class="hover:bg-blue-50/30 transition">
                             <td class="px-6 py-4 font-bold text-gray-900">{{ $tipo->nombre }}</td>
-                            <td class="px-6 py-4 text-gray-600">{{ $tipo->dias_habiles }} días</td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-bold text-gray-900 text-sm">{{ $tipo->dias_habiles }} días</span>
+                                    @if($tipo->tipo_dias === 'calendario')
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200" title="Días calendario (Lunes a Domingo)">
+                                            <i class="ph-bold ph-calendar"></i> Calendario
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200" title="Días hábiles (Lunes a Viernes, excluyendo festivos)">
+                                            <i class="ph-bold ph-briefcase"></i> Hábiles
+                                        </span>
+                                    @endif
+                                </div>
+                            </td>
                             <td class="px-6 py-4 text-center">
                                 @if($tipo->activo)
                                     <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">Activo</span>

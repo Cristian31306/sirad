@@ -8,7 +8,7 @@
                 <h2 class="font-bold text-2xl text-gray-800 tracking-tight">
                     Nuevo Tipo de Trámite
                 </h2>
-                <p class="text-gray-500 text-sm mt-1">Crea un nuevo tipo de trámite y asínale los días hábiles de respuesta.</p>
+                <p class="text-gray-500 text-sm mt-1">Crea un nuevo tipo de trámite y asígnale los días de respuesta (hábiles o calendario).</p>
             </div>
         </div>
     </x-slot>

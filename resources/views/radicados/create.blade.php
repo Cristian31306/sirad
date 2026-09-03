@@ -47,7 +47,7 @@
                                 <option value="">Seleccione un tipo</option>
                                 @foreach($tiposTramites as $tipo)
                                     <option value="{{ $tipo->id }}" {{ old('tipo_tramite_id') == $tipo->id ? 'selected' : '' }}>
-                                        {{ $tipo->nombre }} ({{ $tipo->dias_habiles }} días hábiles)
+                                        {{ $tipo->nombre }} ({{ $tipo->dias_habiles }} días {{ $tipo->tipo_dias === 'calendario' ? 'calendario' : 'hábiles' }})
                                     </option>
                                 @endforeach
                             </select>
