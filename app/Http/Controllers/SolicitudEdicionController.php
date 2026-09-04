@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NuevaRadicacionMail;
 use App\Models\Auditoria;
 use App\Models\Radicado;
 use App\Models\Responsable;
@@ -9,6 +10,7 @@ use App\Models\SolicitudEdicion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
 
 class SolicitudEdicionController extends Controller
 {
@@ -85,7 +87,16 @@ class SolicitudEdicionController extends Controller
 
             // Sincronizar responsables si vienen en los datos propuestos
             if (isset($solicitud->datos_propuestos['responsables'])) {
+                $oldResponsablesIds = $solicitud->radicado->responsables->pluck('id')->toArray();
                 $solicitud->radicado->responsables()->sync($solicitud->datos_propuestos['responsables']);
+
+                $nuevosResponsablesIds = array_diff($solicitud->datos_propuestos['responsables'], $oldResponsablesIds);
+                if (! empty($nuevosResponsablesIds)) {
+                    $nuevosResponsables = Responsable::whereIn('id', $nuevosResponsablesIds)->get();
+                    foreach ($nuevosResponsables as $resp) {
+                        Mail::to($resp->correo)->queue(new NuevaRadicacionMail($solicitud->radicado, $resp));
+                    }
+                }
             }
 
             Auditoria::create([

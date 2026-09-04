@@ -209,7 +209,10 @@ class RadicadoController extends Controller
             $fechaLimite = $this->diasHabilesService->calcularFechaLimite(Carbon::parse($request->fecha_radicacion), $tipoTramite->dias_habiles);
         }
 
-        DB::transaction(function () use ($radicado, $request, $fechaLimite) {
+        $nuevosResponsablesIds = [];
+
+        DB::transaction(function () use ($radicado, $request, $fechaLimite, &$nuevosResponsablesIds) {
+            $oldResponsablesIds = $radicado->responsables->pluck('id')->toArray();
             $radicado->update([
                 'numero_radicado' => $request->numero_radicado,
                 'fecha_radicacion' => Carbon::parse($request->fecha_radicacion)->toDateString(),
@@ -225,7 +228,15 @@ class RadicadoController extends Controller
             ]);
 
             $radicado->responsables()->sync($request->responsables);
+            $nuevosResponsablesIds = array_diff($request->responsables, $oldResponsablesIds);
         });
+
+        if (! empty($nuevosResponsablesIds)) {
+            $nuevosResponsables = Responsable::whereIn('id', $nuevosResponsablesIds)->get();
+            foreach ($nuevosResponsables as $resp) {
+                Mail::to($resp->correo)->queue(new NuevaRadicacionMail($radicado, $resp));
+            }
+        }
 
         return redirect()->route('radicados.show', $radicado)->with('success', 'Radicado actualizado correctamente.');
     }
