@@ -35,7 +35,9 @@ class DashboardController extends Controller
 
                 return Carbon::parse($radicado->fecha_limite)->lessThan($hoy);
             })->count(),
-            'completados' => $radicados->where('estado', 'completado')->count(),
+            'completados' => $radicados->where('estado', 'completado')->filter(function ($radicado) {
+                return $radicado->updated_at && $radicado->updated_at->isCurrentMonth();
+            })->count(),
         ];
 
         // Nuevos hoy (creados hoy)

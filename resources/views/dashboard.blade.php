@@ -58,7 +58,7 @@
                 <div class="text-4xl font-bold text-gray-700 mb-1">{{ $totales['completados'] }}</div>
                 <div class="text-sm text-gray-600 font-medium">Completados</div>
                 <div class="text-xs text-gray-500 font-semibold mt-2 flex items-center gap-1">
-                    <i class="ph ph-check-circle"></i> Trámites cerrados
+                    <i class="ph ph-check-circle"></i> Trámites cerrados este mes
                 </div>
             </div>
             <div class="bg-gray-100 p-4 rounded-full text-gray-500 group-hover:scale-110 transition">
